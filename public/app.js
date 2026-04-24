@@ -2,10 +2,15 @@ const state = {
   flights: [],
   dates: [],
   generatedAt: "",
+  staticGeneratedAt: "",
   jet2Only: false,
   airportCode: "LBA",
   sourceBaseUrl: "",
-  selectedDateIndex: 0
+  staticSourceBaseUrl: "",
+  selectedDateIndex: 0,
+  liveFlightsByDate: {},
+  liveStatusByDate: {},
+  liveGeneratedAtByDate: {}
 };
 
 const jet2Toggle = document.getElementById("jet2Only");
@@ -20,6 +25,22 @@ const dayTemplate = document.getElementById("dayTemplate");
 
 function getDataUrl() {
   return new URL("./data/flights.json", window.location.href).toString();
+}
+
+function getLiveApiBaseUrl() {
+  const configured = window.APP_CONFIG?.liveApiBaseUrl?.trim();
+  return configured || "";
+}
+
+function getLiveApiUrl(dateString) {
+  const baseUrl = getLiveApiBaseUrl();
+  if (!baseUrl) {
+    return null;
+  }
+
+  const url = new URL("/api/live-flights", baseUrl);
+  url.searchParams.set("date", dateString);
+  return url.toString();
 }
 
 function formatFriendlyDate(dateString) {
@@ -41,7 +62,10 @@ function formatTimestamp(isoString) {
 
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
-  const flightsForSelectedDate = state.flights.filter((flight) => flight.date === selectedDate);
+  const liveFlights = state.liveFlightsByDate[selectedDate];
+  const flightsForSelectedDate = Array.isArray(liveFlights)
+    ? liveFlights
+    : state.flights.filter((flight) => flight.date === selectedDate);
 
   return state.jet2Only
     ? flightsForSelectedDate.filter((flight) => flight.isJet2)
@@ -138,12 +162,20 @@ function render() {
 
   const visibleFlights = getVisibleFlights();
   const selectedDate = state.dates[state.selectedDateIndex];
+  const liveStatus = state.liveStatusByDate[selectedDate];
+  const sourceBaseUrl = liveStatus === "live" ? "https://aerodatabox.com/" : state.staticSourceBaseUrl;
+  const sourceName = liveStatus === "live" ? "AeroDataBox" : "flight.info";
+  const generatedAt = liveStatus === "live" ? state.liveGeneratedAtByDate[selectedDate] : state.staticGeneratedAt;
   statusText.textContent = state.jet2Only
     ? `Showing ${visibleFlights.length} Jet2 flights for ${selectedDate} from ${state.airportCode}.`
     : `Showing ${visibleFlights.length} flights for ${selectedDate} from ${state.airportCode}.`;
 
-  sourceText.innerHTML = state.generatedAt
-    ? `Updated ${formatTimestamp(state.generatedAt)}. Browse forward until the dataset runs out. Data source: <a href="${state.sourceBaseUrl}" target="_blank" rel="noreferrer">flight.info</a>.`
+  sourceText.innerHTML = generatedAt
+    ? `${liveStatus === "live"
+        ? "Using live data for today. "
+        : liveStatus === "fallback"
+          ? "Live data unavailable, showing scheduled fallback data. "
+          : ""}Updated ${formatTimestamp(generatedAt)}. Browse forward until the dataset runs out. Data source: <a href="${sourceBaseUrl}" target="_blank" rel="noreferrer">${sourceName}</a>.`
     : "";
 }
 
@@ -173,8 +205,10 @@ async function loadFlights() {
     state.flights = payload.flights;
     state.dates = payload.dates;
     state.generatedAt = payload.generatedAt;
+    state.staticGeneratedAt = payload.generatedAt;
     state.airportCode = payload.airport.code;
     state.sourceBaseUrl = payload.source.baseUrl;
+    state.staticSourceBaseUrl = payload.source.baseUrl;
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
     render();
   } catch (error) {
@@ -187,6 +221,41 @@ async function loadFlights() {
       previousDayButton.disabled = state.selectedDateIndex === 0;
       nextDayButton.disabled = state.selectedDateIndex >= state.dates.length - 1;
       jumpTodayButton.disabled = !state.dates.includes(getTodayDateString());
+    }
+  }
+}
+
+async function loadLiveFlightsForTodayIfAvailable() {
+  const today = getTodayDateString();
+  const liveApiUrl = getLiveApiUrl(today);
+
+  if (!liveApiUrl || !state.dates.includes(today)) {
+    return;
+  }
+
+  state.liveStatusByDate[today] = "loading";
+  render();
+
+  try {
+    const response = await fetch(liveApiUrl, { cache: "no-store" });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Live request failed");
+    }
+
+    state.liveFlightsByDate[today] = payload.flights || [];
+    state.liveStatusByDate[today] = "live";
+    state.liveGeneratedAtByDate[today] = payload.generatedAt;
+
+    if (state.dates[state.selectedDateIndex] === today) {
+      render();
+    }
+  } catch (_error) {
+    state.liveStatusByDate[today] = "fallback";
+
+    if (state.dates[state.selectedDateIndex] === today) {
+      render();
     }
   }
 }
@@ -214,4 +283,4 @@ jumpTodayButton.addEventListener("click", () => {
   }
 });
 
-loadFlights();
+loadFlights().then(() => loadLiveFlightsForTodayIfAvailable());

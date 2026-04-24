@@ -50,7 +50,8 @@ function normalizeAirportName(airport) {
 
 function normalizeFlight(flight, type, selectedDate) {
   const movement = flight.movement || (type === "departures" ? flight.arrival : flight.departure);
-  const timeSource = getBestMovementTime(type === "departures" ? flight.departure || movement : flight.arrival || movement);
+  const primaryMovement = type === "departures" ? flight.departure || movement : flight.arrival || movement;
+  const timeSource = getBestMovementTime(primaryMovement);
   const airport = movement?.airport;
   const airportCode = airport?.iata || airport?.icao || "";
   const airportName = normalizeAirportName(airport);
@@ -70,14 +71,25 @@ function normalizeFlight(flight, type, selectedDate) {
     isJet2: /jet2/i.test(airline),
     sourceUrl: null,
     status: flight.status || "Unknown",
-    isLive: true
+    isLive: true,
+    scheduledTime: primaryMovement?.scheduledTime?.local || "",
+    revisedTime: primaryMovement?.revisedTime?.local || "",
+    runwayTime: primaryMovement?.runwayTime?.local || "",
+    terminal: primaryMovement?.terminal || "",
+    gate: primaryMovement?.gate || "",
+    baggageBelt: primaryMovement?.baggageBelt || "",
+    checkInDesk: primaryMovement?.checkInDesk || "",
+    runway: primaryMovement?.runway || "",
+    callSign: flight.callSign || "",
+    aircraftRegistration: flight.aircraft?.reg || "",
+    aircraftModel: flight.aircraft?.model || ""
   };
 }
 
 async function fetchAirportWindow(fromLocal, toLocal, apiKey) {
   const url = new URL(`${AERODATABOX_BASE_URL}/flights/airports/iata/${AIRPORT_CODE}/${fromLocal}/${toLocal}`);
   url.searchParams.set("withLeg", "true");
-  url.searchParams.set("withCancelled", "false");
+  url.searchParams.set("withCancelled", "true");
   url.searchParams.set("withCodeshared", "false");
   url.searchParams.set("withCargo", "false");
   url.searchParams.set("withPrivate", "false");

@@ -4,6 +4,7 @@ const state = {
   generatedAt: "",
   staticGeneratedAt: "",
   jet2Only: false,
+  activeView: "departures",
   airportCode: "LBA",
   sourceBaseUrl: "",
   staticSourceBaseUrl: "",
@@ -14,11 +15,12 @@ const state = {
 };
 
 const jet2Toggle = document.getElementById("jet2Only");
+const departuresToggle = document.getElementById("departuresToggle");
+const arrivalsToggle = document.getElementById("arrivalsToggle");
 const previousDayButton = document.getElementById("previousDayButton");
 const nextDayButton = document.getElementById("nextDayButton");
 const jumpTodayButton = document.getElementById("jumpTodayButton");
 const results = document.getElementById("results");
-const summaryCards = document.getElementById("summaryCards");
 const statusText = document.getElementById("statusText");
 const sourceText = document.getElementById("sourceText");
 const dayTemplate = document.getElementById("dayTemplate");
@@ -72,13 +74,6 @@ function getVisibleFlights() {
     : flightsForSelectedDate;
 }
 
-function createSummaryCard(value, label) {
-  const card = document.createElement("article");
-  card.className = "summary-card";
-  card.innerHTML = `<h2>${value}</h2><p>${label}</p>`;
-  return card;
-}
-
 function createFlightRow(flight) {
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -103,35 +98,6 @@ function fillTable(tbody, flights, emptyLabel) {
   flights.forEach((flight) => tbody.appendChild(createFlightRow(flight)));
 }
 
-function renderSummary() {
-  const visibleFlights = getVisibleFlights();
-  const departures = visibleFlights.filter((flight) => flight.type === "departures");
-  const arrivals = visibleFlights.filter((flight) => flight.type === "arrivals");
-  const selectedDate = state.dates[state.selectedDateIndex];
-  const summaryCard = document.createElement("article");
-
-  summaryCard.className = "summary-card summary-card-compact";
-  summaryCard.innerHTML = `
-    <p class="summary-date">${selectedDate || "No date selected"}</p>
-    <div class="summary-stats">
-      <div>
-        <h2>${visibleFlights.length}</h2>
-        <p>${state.jet2Only ? "Jet2 flights" : "Flights"}</p>
-      </div>
-      <div>
-        <h2>${departures.length}</h2>
-        <p>Departures</p>
-      </div>
-      <div>
-        <h2>${arrivals.length}</h2>
-        <p>Arrivals</p>
-      </div>
-    </div>
-  `;
-
-  summaryCards.replaceChildren(summaryCard);
-}
-
 function renderResults() {
   const visibleFlights = getVisibleFlights();
   results.replaceChildren();
@@ -147,10 +113,14 @@ function renderResults() {
   const departures = visibleFlights.filter((flight) => flight.type === "departures");
   const arrivals = visibleFlights.filter((flight) => flight.type === "arrivals");
   const fragment = dayTemplate.content.cloneNode(true);
+  const departuresSection = fragment.querySelector(".departures-section");
+  const arrivalsSection = fragment.querySelector(".arrivals-section");
 
   fragment.querySelector(".day-label").textContent = `Day ${state.selectedDateIndex + 1} of ${state.dates.length}`;
   fragment.querySelector(".day-date").textContent = formatFriendlyDate(dateString);
-  fragment.querySelector(".total-pill").textContent = `${visibleFlights.length} flights`;
+  fragment.querySelector(".total-pill").textContent = `${
+    state.activeView === "departures" ? departures.length : arrivals.length
+  } ${state.activeView}`;
   fragment.querySelector(".departures-pill").textContent = `${departures.length} departures`;
   fragment.querySelector(".arrivals-pill").textContent = `${arrivals.length} arrivals`;
 
@@ -165,6 +135,12 @@ function renderResults() {
     state.jet2Only ? "No Jet2 arrivals for this day." : "No arrivals for this day."
   );
 
+  if (state.activeView === "departures") {
+    arrivalsSection.remove();
+  } else {
+    departuresSection.remove();
+  }
+
   previousDayButton.disabled = state.selectedDateIndex === 0;
   nextDayButton.disabled = state.selectedDateIndex >= state.dates.length - 1;
   jumpTodayButton.disabled = !state.dates.includes(getTodayDateString());
@@ -172,7 +148,6 @@ function renderResults() {
 }
 
 function render() {
-  renderSummary();
   renderResults();
 
   const visibleFlights = getVisibleFlights();
@@ -181,9 +156,13 @@ function render() {
   const sourceBaseUrl = liveStatus === "live" ? "https://aerodatabox.com/" : state.staticSourceBaseUrl;
   const sourceName = liveStatus === "live" ? "AeroDataBox" : "flight.info";
   const generatedAt = liveStatus === "live" ? state.liveGeneratedAtByDate[selectedDate] : state.staticGeneratedAt;
+  const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
   statusText.textContent = state.jet2Only
-    ? `Showing ${visibleFlights.length} Jet2 flights for ${selectedDate} from ${state.airportCode}.`
-    : `Showing ${visibleFlights.length} flights for ${selectedDate} from ${state.airportCode}.`;
+    ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}.`
+    : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}.`;
+
+  departuresToggle.classList.toggle("is-active", state.activeView === "departures");
+  arrivalsToggle.classList.toggle("is-active", state.activeView === "arrivals");
 
   sourceText.innerHTML = generatedAt
     ? `${liveStatus === "live"
@@ -227,7 +206,6 @@ async function loadFlights() {
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
     render();
   } catch (error) {
-    summaryCards.replaceChildren();
     results.replaceChildren();
     statusText.textContent = `Could not load flights: ${error.message}`;
     sourceText.textContent = "";
@@ -277,6 +255,16 @@ async function loadLiveFlightsForTodayIfAvailable() {
 
 jet2Toggle.addEventListener("change", () => {
   state.jet2Only = jet2Toggle.checked;
+  render();
+});
+
+departuresToggle.addEventListener("click", () => {
+  state.activeView = "departures";
+  render();
+});
+
+arrivalsToggle.addEventListener("click", () => {
+  state.activeView = "arrivals";
   render();
 });
 

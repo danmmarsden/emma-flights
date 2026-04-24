@@ -11,7 +11,7 @@
   <body>
     <main class="page-shell">
       <section class="hero">
-        <h1>LBS Arrivals &amp; Departures</h1>
+        <h1>LBA Arrivals &amp; Departures</h1>
         <p class="intro">
           Step through LBA schedule data day by day, with a quick Jet2-only filter and no server dependency in production.
         </p>
@@ -20,6 +20,11 @@
           <div class="day-nav" aria-label="Day navigation">
             <button id="previousDayButton" class="nav-button" type="button">Previous day</button>
             <button id="nextDayButton" class="nav-button" type="button">Next day</button>
+          </div>
+
+          <div class="view-toggle" aria-label="Flight type toggle">
+            <button id="departuresToggle" class="view-toggle-button is-active" type="button">Departures</button>
+            <button id="arrivalsToggle" class="view-toggle-button" type="button">Arrivals</button>
           </div>
 
           <label class="toggle">
@@ -36,7 +41,6 @@
         </div>
       </section>
 
-      <section id="summaryCards" class="summary-grid" aria-label="Flight summary"></section>
       <section id="results" class="results-grid" aria-live="polite"></section>
     </main>
 
@@ -51,7 +55,7 @@
         </div>
 
         <div class="tables">
-          <section class="table-card">
+          <section class="table-card departures-section">
             <div class="table-header">
               <h3>Departures</h3>
               <span class="pill departures-pill"></span>
@@ -71,7 +75,7 @@
             </div>
           </section>
 
-          <section class="table-card">
+          <section class="table-card arrivals-section">
             <div class="table-header">
               <h3>Arrivals</h3>
               <span class="pill arrivals-pill"></span>

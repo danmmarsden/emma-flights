@@ -99,6 +99,31 @@ h1 {
   flex-wrap: wrap;
 }
 
+.view-toggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+}
+
+.view-toggle-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.view-toggle-button.is-active {
+  background: linear-gradient(135deg, var(--brand), #f15946);
+  color: white;
+  box-shadow: 0 10px 20px rgba(214, 45, 32, 0.18);
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -163,18 +188,12 @@ h1 {
   color: var(--muted);
 }
 
-.summary-grid,
 .results-grid {
   display: grid;
   gap: 18px;
   margin-top: 24px;
 }
 
-.summary-grid {
-  grid-template-columns: 1fr;
-}
-
-.summary-card,
 .day-card {
   background: var(--panel);
   border: 1px solid rgba(255, 255, 255, 0.45);
@@ -188,64 +207,12 @@ th,
 td,
 .table-header h3,
 .day-date,
-.summary-card h2,
-.summary-card p,
 .status-text,
 .source-text,
 .intro,
 .toggle,
 .empty-state {
   color: var(--text);
-}
-
-.summary-card {
-  padding: 20px;
-}
-
-.summary-card-compact {
-  padding: 16px 20px;
-}
-
-.summary-card h2,
-.summary-card p {
-  margin: 0;
-}
-
-.summary-card h2 {
-  font-size: clamp(1.35rem, 4vw, 2.4rem);
-  letter-spacing: -0.05em;
-}
-
-.summary-card p {
-  margin-top: 8px;
-  color: var(--muted);
-}
-
-.summary-date {
-  margin: 0 0 10px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.summary-stats > div {
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid var(--line);
-}
-
-.summary-stats .summary-card p,
-.summary-stats p {
-  margin-top: 6px;
 }
 
 .day-card {
@@ -388,14 +355,5 @@ tbody tr:last-child td {
   th,
   td {
     padding: 10px 12px;
-  }
-
-  .summary-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .summary-stats > div {
-    padding: 10px;
   }
 }

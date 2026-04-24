@@ -93,6 +93,12 @@ h1 {
   margin-top: 28px;
 }
 
+.day-nav {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -110,18 +116,36 @@ h1 {
   height: 18px;
 }
 
+.nav-button,
 .refresh-button {
   appearance: none;
-  border: 0;
   border-radius: 999px;
   padding: 12px 18px;
-  background: linear-gradient(135deg, var(--brand), #f15946);
-  color: white;
   font-weight: 700;
   cursor: pointer;
+}
+
+.nav-button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+}
+
+.refresh-button {
+  border: 0;
+  background: linear-gradient(135deg, var(--brand), #f15946);
+  color: white;
   box-shadow: 0 16px 30px rgba(214, 45, 32, 0.22);
 }
 
+.nav-button:disabled,
+.refresh-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nav-button:hover,
 .refresh-button:hover {
   transform: translateY(-1px);
 }
@@ -184,7 +208,7 @@ td,
 }
 
 .summary-card h2 {
-  font-size: 2.4rem;
+  font-size: clamp(1.35rem, 4vw, 2.4rem);
   letter-spacing: -0.05em;
 }
 

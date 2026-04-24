@@ -12,18 +12,23 @@
     <main class="page-shell">
       <section class="hero">
         <p class="eyebrow">Leeds Bradford Airport</p>
-        <h1>Arrivals and departures for the next 3 days.</h1>
+        <h1>Browse arrivals and departures one day at a time.</h1>
         <p class="intro">
-          A simple live view of scheduled LBA flights, with a quick Jet2-only filter.
+          Step through LBA schedule data day by day, with a quick Jet2-only filter and no server dependency in production.
         </p>
 
         <div class="controls">
+          <div class="day-nav" aria-label="Day navigation">
+            <button id="previousDayButton" class="nav-button" type="button">Previous day</button>
+            <button id="nextDayButton" class="nav-button" type="button">Next day</button>
+          </div>
+
           <label class="toggle">
             <input id="jet2Only" type="checkbox">
             <span>Jet2 only</span>
           </label>
 
-          <button id="refreshButton" class="refresh-button" type="button">Refresh</button>
+          <button id="jumpTodayButton" class="refresh-button" type="button">Jump to today</button>
         </div>
 
         <div class="meta-row">

@@ -391,6 +391,11 @@ tbody tr:last-child td {
   }
 
   .summary-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .summary-stats > div {
+    padding: 10px;
   }
 }

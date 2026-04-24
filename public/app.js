@@ -108,13 +108,28 @@ function renderSummary() {
   const departures = visibleFlights.filter((flight) => flight.type === "departures");
   const arrivals = visibleFlights.filter((flight) => flight.type === "arrivals");
   const selectedDate = state.dates[state.selectedDateIndex];
+  const summaryCard = document.createElement("article");
 
-  summaryCards.replaceChildren(
-    createSummaryCard(selectedDate || "No date", "Selected day"),
-    createSummaryCard(visibleFlights.length, state.jet2Only ? "Jet2 flights on this day" : "Flights on this day"),
-    createSummaryCard(departures.length, "Departures"),
-    createSummaryCard(arrivals.length, "Arrivals")
-  );
+  summaryCard.className = "summary-card summary-card-compact";
+  summaryCard.innerHTML = `
+    <p class="summary-date">${selectedDate || "No date selected"}</p>
+    <div class="summary-stats">
+      <div>
+        <h2>${visibleFlights.length}</h2>
+        <p>${state.jet2Only ? "Jet2 flights" : "Flights"}</p>
+      </div>
+      <div>
+        <h2>${departures.length}</h2>
+        <p>Departures</p>
+      </div>
+      <div>
+        <h2>${arrivals.length}</h2>
+        <p>Arrivals</p>
+      </div>
+    </div>
+  `;
+
+  summaryCards.replaceChildren(summaryCard);
 }
 
 function renderResults() {

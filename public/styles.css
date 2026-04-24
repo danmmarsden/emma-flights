@@ -171,7 +171,7 @@ h1 {
 }
 
 .summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .summary-card,
@@ -202,6 +202,10 @@ td,
   padding: 20px;
 }
 
+.summary-card-compact {
+  padding: 16px 20px;
+}
+
 .summary-card h2,
 .summary-card p {
   margin: 0;
@@ -215,6 +219,33 @@ td,
 .summary-card p {
   margin-top: 8px;
   color: var(--muted);
+}
+
+.summary-date {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-stats > div {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--line);
+}
+
+.summary-stats .summary-card p,
+.summary-stats p {
+  margin-top: 6px;
 }
 
 .day-card {
@@ -357,5 +388,9 @@ tbody tr:last-child td {
   th,
   td {
     padding: 10px 12px;
+  }
+
+  .summary-stats {
+    grid-template-columns: 1fr;
   }
 }

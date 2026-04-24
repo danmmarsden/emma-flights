@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>LBA Arrivals & Departures</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">Leeds Bradford Airport</p>
+        <h1>Arrivals and departures for the next 3 days.</h1>
+        <p class="intro">
+          A simple live view of scheduled LBA flights, with a quick Jet2-only filter.
+        </p>
+
+        <div class="controls">
+          <label class="toggle">
+            <input id="jet2Only" type="checkbox">
+            <span>Jet2 only</span>
+          </label>
+
+          <button id="refreshButton" class="refresh-button" type="button">Refresh</button>
+        </div>
+
+        <div class="meta-row">
+          <p id="statusText" class="status-text">Loading flights...</p>
+          <p id="sourceText" class="source-text"></p>
+        </div>
+      </section>
+
+      <section id="summaryCards" class="summary-grid" aria-label="Flight summary"></section>
+      <section id="results" class="results-grid" aria-live="polite"></section>
+    </main>
+
+    <template id="dayTemplate">
+      <article class="day-card">
+        <div class="day-header">
+          <div>
+            <p class="day-label"></p>
+            <h2 class="day-date"></h2>
+          </div>
+          <span class="pill total-pill"></span>
+        </div>
+
+        <div class="tables">
+          <section class="table-card">
+            <div class="table-header">
+              <h3>Departures</h3>
+              <span class="pill departures-pill"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Flight</th>
+                    <th>Airline</th>
+                    <th>Destination</th>
+                  </tr>
+                </thead>
+                <tbody class="departures-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="table-card">
+            <div class="table-header">
+              <h3>Arrivals</h3>
+              <span class="pill arrivals-pill"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Flight</th>
+                    <th>Airline</th>
+                    <th>Origin</th>
+                  </tr>
+                </thead>
+                <tbody class="arrivals-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

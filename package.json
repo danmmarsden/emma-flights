@@ -1,0 +1,9 @@
+{
+  "name": "arrivals-departures",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple Leeds Bradford Airport arrivals and departures viewer",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

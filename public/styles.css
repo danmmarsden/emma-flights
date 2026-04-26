@@ -354,6 +354,37 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+.flight-code-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 209, 102, 0.12);
+  border: 1px solid rgba(255, 209, 102, 0.2);
+  color: var(--accent);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+tbody tr.has-details {
+  cursor: pointer;
+}
+
+tbody tr.has-details:hover td,
+tbody tr.has-details:focus-visible td {
+  background:
+    linear-gradient(180deg, rgba(255, 209, 102, 0.12) 0 49%, rgba(0, 0, 0, 0.24) 49% 51%, rgba(255, 209, 102, 0.06) 51% 100%),
+    linear-gradient(180deg, #171b1f, #12161a);
+}
+
 .airline-badge {
   display: inline-flex;
   align-items: center;
@@ -367,6 +398,106 @@ tbody tr:last-child td {
 .empty-state {
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.flight-modal {
+  border: 0;
+  padding: 0;
+  width: min(760px, calc(100% - 24px));
+  background: transparent;
+}
+
+.flight-modal::backdrop {
+  background: rgba(0, 0, 0, 0.64);
+}
+
+.flight-modal-card {
+  position: relative;
+  padding: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #191d22, #111419);
+  box-shadow: var(--shadow);
+}
+
+.flight-modal-close {
+  appearance: none;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, #252c34, #171c22);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--board-font);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.flight-modal-eyebrow,
+.flight-modal-title,
+.flight-modal-subtitle {
+  margin: 0;
+}
+
+.flight-modal-eyebrow {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.flight-modal-title {
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flight-modal-subtitle {
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 0.96rem;
+  letter-spacing: 0.04em;
+}
+
+.flight-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.flight-detail-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #171c21, #12161a);
+}
+
+.flight-detail-label,
+.flight-detail-value {
+  margin: 0;
+}
+
+.flight-detail-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.flight-detail-value {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
 }
 
 @media (max-width: 900px) {
@@ -422,5 +553,13 @@ tbody tr:last-child td {
   td {
     font-size: 0.96rem;
     letter-spacing: 0.05em;
+  }
+
+  .flight-modal-card {
+    padding: 18px;
+  }
+
+  .flight-modal-grid {
+    grid-template-columns: 1fr;
   }
 }

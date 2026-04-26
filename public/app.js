@@ -9,9 +9,11 @@ const state = {
   sourceBaseUrl: "",
   staticSourceBaseUrl: "",
   selectedDateIndex: 0,
+  selectedFlight: null,
   liveFlightsByDate: {},
   liveStatusByDate: {},
-  liveGeneratedAtByDate: {}
+  liveGeneratedAtByDate: {},
+  liveMessageByDate: {}
 };
 
 const jet2Toggle = document.getElementById("jet2Only");
@@ -24,6 +26,12 @@ const results = document.getElementById("results");
 const statusText = document.getElementById("statusText");
 const sourceText = document.getElementById("sourceText");
 const dayTemplate = document.getElementById("dayTemplate");
+const flightModal = document.getElementById("flightModal");
+const closeFlightModalButton = document.getElementById("closeFlightModalButton");
+const flightModalEyebrow = document.getElementById("flightModalEyebrow");
+const flightModalTitle = document.getElementById("flightModalTitle");
+const flightModalSubtitle = document.getElementById("flightModalSubtitle");
+const flightModalGrid = document.getElementById("flightModalGrid");
 
 function getDataUrl() {
   return new URL("./data/flights.json", window.location.href).toString();
@@ -62,27 +70,155 @@ function formatTimestamp(isoString) {
   }).format(new Date(isoString));
 }
 
+function formatDateTime(dateTimeString) {
+  if (!dateTimeString) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date(dateTimeString));
+}
+
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveFlights = state.liveFlightsByDate[selectedDate];
   const flightsForSelectedDate = Array.isArray(liveFlights)
     ? liveFlights
     : state.flights.filter((flight) => flight.date === selectedDate);
+  const filteredFlights = flightsForSelectedDate.filter((flight) => !isCompletedFlight(flight, selectedDate));
 
   return state.jet2Only
-    ? flightsForSelectedDate.filter((flight) => flight.isJet2)
-    : flightsForSelectedDate;
+    ? filteredFlights.filter((flight) => flight.isJet2)
+    : filteredFlights;
+}
+
+function getCurrentTimeString() {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date());
+}
+
+function isCompletedFlight(flight, selectedDate) {
+  const normalizedStatus = String(flight.status || "").toLowerCase();
+  if (normalizedStatus === "departed" || normalizedStatus === "arrived") {
+    return true;
+  }
+
+  if (selectedDate !== getTodayDateString()) {
+    return false;
+  }
+
+  if (!/^\d{2}:\d{2}$/.test(flight.time)) {
+    return false;
+  }
+
+  return flight.time < getCurrentTimeString();
+}
+
+function hasExtraDetails(flight) {
+  return Boolean(
+    flight.isLive && (
+      flight.aircraftRegistration ||
+      flight.aircraftModel ||
+      flight.revisedTime ||
+      flight.runwayTime ||
+      flight.terminal ||
+      flight.gate ||
+      flight.checkInDesk ||
+      flight.baggageBelt ||
+      flight.runway ||
+      flight.callSign ||
+      flight.status
+    )
+  );
 }
 
 function createFlightRow(flight) {
   const row = document.createElement("tr");
+  const detailsAvailable = hasExtraDetails(flight);
+  const flightCell = detailsAvailable
+    ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span></span>`
+    : `<span class="flight-code">${flight.flightNumber}</span>`;
   row.innerHTML = `
     <td>${flight.time}</td>
-    <td class="flight-code">${flight.flightNumber}</td>
+    <td>${flightCell}</td>
     <td><span class="airline-badge">${flight.airline}</span></td>
     <td>${flight.route}</td>
   `;
+
+  if (detailsAvailable) {
+    row.classList.add("has-details");
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.setAttribute("aria-label", `Open details for ${flight.flightNumber}`);
+    row.addEventListener("click", () => openFlightModal(flight));
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openFlightModal(flight);
+      }
+    });
+  }
+
   return row;
+}
+
+function createDetailItem(label, value) {
+  const item = document.createElement("div");
+  item.className = "flight-detail-item";
+  item.innerHTML = `<p class="flight-detail-label">${label}</p><p class="flight-detail-value">${value}</p>`;
+  return item;
+}
+
+function openFlightModal(flight) {
+  if (!hasExtraDetails(flight)) {
+    return;
+  }
+
+  state.selectedFlight = flight;
+  renderFlightModal();
+  flightModal.showModal();
+}
+
+function closeFlightModal() {
+  state.selectedFlight = null;
+  flightModal.close();
+}
+
+function renderFlightModal() {
+  const flight = state.selectedFlight;
+  if (!flight) {
+    return;
+  }
+
+  const details = [
+    ["Preview", "Live flight detail"],
+    ["Flight", flight.flightNumber],
+    ["Airline", flight.airline],
+    [flight.type === "departures" ? "Destination" : "Origin", flight.route],
+    ["Status", flight.status || "Unknown"],
+    ["Scheduled time", formatDateTime(flight.scheduledTime)],
+    ["Revised time", formatDateTime(flight.revisedTime)],
+    ["Runway time", formatDateTime(flight.runwayTime)],
+    ["Terminal", flight.terminal || "Not available"],
+    ["Gate", flight.gate || "Not available"],
+    ["Check-in desk", flight.checkInDesk || "Not available"],
+    ["Baggage belt", flight.baggageBelt || "Not available"],
+    ["Runway", flight.runway || "Not available"],
+    ["Call sign", flight.callSign || "Not available"],
+    ["Aircraft registration", flight.aircraftRegistration || "Not available"],
+    ["Aircraft model", flight.aircraftModel || "Not available"]
+  ];
+
+  flightModalEyebrow.textContent = flight.type === "departures" ? "Departure details" : "Arrival details";
+  flightModalTitle.textContent = flight.flightNumber;
+  flightModalSubtitle.textContent = `${flight.airline} • ${flight.route}`;
+  flightModalGrid.replaceChildren(...details.map(([label, value]) => createDetailItem(label, value)));
 }
 
 function fillTable(tbody, flights, emptyLabel) {
@@ -157,6 +293,7 @@ function render() {
   const sourceName = liveStatus === "live" ? "AeroDataBox" : "flight.info";
   const generatedAt = liveStatus === "live" ? state.liveGeneratedAtByDate[selectedDate] : state.staticGeneratedAt;
   const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
+  const liveMessage = state.liveMessageByDate[selectedDate] || "";
   statusText.textContent = state.jet2Only
     ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}.`
     : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}.`;
@@ -168,7 +305,7 @@ function render() {
     ? `${liveStatus === "live"
         ? "Using live data for today. "
         : liveStatus === "fallback"
-          ? "Live data unavailable, showing scheduled fallback data. "
+          ? `${liveMessage || "Live data unavailable, showing scheduled fallback data."} `
           : ""}Updated ${formatTimestamp(generatedAt)}. Browse forward until the dataset runs out. Data source: <a href="${sourceBaseUrl}" target="_blank" rel="noreferrer">${sourceName}</a>.`
     : "";
 }
@@ -237,15 +374,29 @@ async function loadLiveFlightsForTodayIfAvailable() {
       throw new Error(payload.error || "Live request failed");
     }
 
+    if (!Array.isArray(payload.flights) || payload.flights.length === 0) {
+      state.liveStatusByDate[today] = "fallback";
+      state.liveMessageByDate[today] = "Live feed returned no flights, showing scheduled fallback data.";
+
+      if (state.dates[state.selectedDateIndex] === today) {
+        render();
+      }
+      return;
+    }
+
     state.liveFlightsByDate[today] = payload.flights || [];
     state.liveStatusByDate[today] = "live";
     state.liveGeneratedAtByDate[today] = payload.generatedAt;
+    state.liveMessageByDate[today] = "";
 
     if (state.dates[state.selectedDateIndex] === today) {
       render();
     }
-  } catch (_error) {
+  } catch (error) {
     state.liveStatusByDate[today] = "fallback";
+    state.liveMessageByDate[today] = String(error.message).includes("(429)")
+      ? "Live feed is temporarily rate-limited, showing scheduled fallback data."
+      : "Live data unavailable, showing scheduled fallback data.";
 
     if (state.dates[state.selectedDateIndex] === today) {
       render();
@@ -283,6 +434,21 @@ jumpTodayButton.addEventListener("click", () => {
   if (todayIndex >= 0) {
     state.selectedDateIndex = todayIndex;
     render();
+  }
+});
+
+closeFlightModalButton.addEventListener("click", closeFlightModal);
+
+flightModal.addEventListener("click", (event) => {
+  const bounds = flightModal.getBoundingClientRect();
+  const clickedOutside =
+    event.clientX < bounds.left ||
+    event.clientX > bounds.right ||
+    event.clientY < bounds.top ||
+    event.clientY > bounds.bottom;
+
+  if (clickedOutside) {
+    closeFlightModal();
   }
 });
 

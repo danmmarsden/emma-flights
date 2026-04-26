@@ -13,6 +13,20 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function setCacheHeaders(res, mode = "dynamic") {
+  if (mode === "success") {
+    res.setHeader("cache-control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600");
+    return;
+  }
+
+  if (mode === "rate-limit") {
+    res.setHeader("cache-control", "public, max-age=120, s-maxage=120, stale-while-revalidate=240");
+    return;
+  }
+
+  res.setHeader("cache-control", "no-store");
+}
+
 function getTodayDateString() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/London",
@@ -143,6 +157,7 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     Object.entries(CORS_HEADERS).forEach(([key, value]) => res.setHeader(key, value));
+    setCacheHeaders(res, "dynamic");
     res.end();
     return;
   }
@@ -168,6 +183,7 @@ module.exports = async (req, res) => {
 
   try {
     const flights = await getLiveFlightsForDate(requestedDate, apiKey);
+    setCacheHeaders(res, "success");
     sendJson(res, 200, {
       airport: {
         code: AIRPORT_CODE,
@@ -182,6 +198,11 @@ module.exports = async (req, res) => {
       flights
     });
   } catch (error) {
+    if (String(error.message).includes("(429)")) {
+      setCacheHeaders(res, "rate-limit");
+    } else {
+      setCacheHeaders(res, "dynamic");
+    }
     sendJson(res, 502, { error: error.message });
   }
 };

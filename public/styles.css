@@ -7,9 +7,9 @@
   --panel-soft: #1e242b;
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.16);
-  --text: #f2ead7;
-  --muted: #a39a88;
-  --accent: #ffbf47;
+  --text: #fff4dc;
+  --muted: #c9bfae;
+  --accent: #ffd166;
   --accent-soft: rgba(255, 191, 71, 0.14);
   --danger: #ff6b5e;
   --shadow: 0 28px 60px rgba(0, 0, 0, 0.45);
@@ -416,11 +416,11 @@ tbody tr:last-child td {
   }
 
   th {
-    font-size: 0.64rem;
+    font-size: 0.72rem;
   }
 
   td {
-    font-size: 0.86rem;
-    letter-spacing: 0.04em;
+    font-size: 0.96rem;
+    letter-spacing: 0.05em;
   }
 }

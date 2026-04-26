@@ -1,5 +1,5 @@
 const AIRPORT_CODE = "LBA";
-const AERODATABOX_BASE_URL = "https://prod.api.market/api/v1/aedbx/aerodatabox";
+const AERODATABOX_BASE_URL = "https://aerodatabox.p.rapidapi.com";
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, OPTIONS",
@@ -96,7 +96,8 @@ async function fetchAirportWindow(fromLocal, toLocal, apiKey) {
 
   const response = await fetch(url, {
     headers: {
-      "x-magicapi-key": apiKey,
+      "X-RapidAPI-Key": apiKey,
+      "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com",
       accept: "application/json"
     }
   });
@@ -151,9 +152,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const apiKey = process.env.AERODATABOX_API_KEY;
+  const apiKey = process.env.AERODATABOX_RAPIDAPI_KEY;
   if (!apiKey) {
-    sendJson(res, 500, { error: "Missing AERODATABOX_API_KEY" });
+    sendJson(res, 500, { error: "Missing AERODATABOX_RAPIDAPI_KEY" });
     return;
   }
 

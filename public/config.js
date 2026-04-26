@@ -1,3 +1,3 @@
 window.APP_CONFIG = {
-  liveApiBaseUrl: ""
+  liveApiBaseUrl: "https://emma-flights-l1fx76cj6-danmmarsdens-projects.vercel.app"
 };

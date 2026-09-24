@@ -1,7 +1,16 @@
 const AIRPORT_CODE = "LBA";
 const AERODATABOX_BASE_URL = "https://aerodatabox.p.rapidapi.com";
+const LBA_BASE_URL = "https://www.leedsbradfordairport.co.uk";
 const COMPLETED_FLIGHT_GRACE_MINUTES = 30;
 const LIVE_WINDOW_LIMIT_MINUTES = 12 * 60;
+const LBA_ACTION_FALLBACKS = {
+  arrivals: "c8bc44f9ed7b6bc4e8dee86b37c5559c5f013247",
+  departures: "be88851dd7690048df46996c09ae47bbb9586bdb"
+};
+const LBA_ACTION_BODY = {
+  arrivals: "[3,3]",
+  departures: "[5,3]"
+};
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, OPTIONS",
@@ -17,7 +26,7 @@ function sendJson(res, statusCode, payload) {
 
 function setCacheHeaders(res, mode = "dynamic") {
   if (mode === "success") {
-    res.setHeader("cache-control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600");
+    res.setHeader("cache-control", "public, max-age=55, s-maxage=55, stale-while-revalidate=60");
     return;
   }
 
@@ -80,6 +89,14 @@ function minutesBetween(startDateTime, endDateTime) {
   return Math.round(diffMs / 60000);
 }
 
+function isDifferentMinute(leftDateTime, rightDateTime) {
+  if (!leftDateTime || !rightDateTime) {
+    return false;
+  }
+
+  return extractTime(leftDateTime) !== extractTime(rightDateTime);
+}
+
 function getBestMovementTime(movement) {
   return movement?.scheduledTime?.local || movement?.revisedTime?.local || movement?.runwayTime?.local || "";
 }
@@ -128,6 +145,8 @@ function normalizeFlight(flight, type, selectedDate) {
     revisedTime,
     runwayTime: actualTime,
     actualTime,
+    liveStatusText: status,
+    hasExpectedUpdate: isDifferentMinute(scheduledTime, revisedTime),
     isCancelled,
     isDelayed,
     delayMinutes: isDelayed ? delayMinutes : 0,
@@ -139,6 +158,138 @@ function normalizeFlight(flight, type, selectedDate) {
     callSign: flight.callSign || "",
     aircraftRegistration: flight.aircraft?.reg || "",
     aircraftModel: flight.aircraft?.model || ""
+  };
+}
+
+function getLbaRoute(type) {
+  return `${LBA_BASE_URL}/flights/${type}`;
+}
+
+function getLbaRouterStateTree(type) {
+  return encodeURIComponent(JSON.stringify([
+    "",
+    {
+      children: [
+        ["path", `flights/${type}`, "oc"],
+        {
+          children: ["__PAGE__", {}, `/flights/${type}`, "refresh"]
+        }
+      ]
+    },
+    null,
+    null,
+    true
+  ]));
+}
+
+function extractLbaMetadata(html) {
+  const deploymentId = html.match(/dpl_[A-Za-z0-9]+/)?.[0] || "";
+  const actionIds = [...new Set(html.match(/[a-f0-9]{40}/g) || [])];
+
+  return { deploymentId, actionIds };
+}
+
+function parseLbaRscFlights(text) {
+  const line = text.split(/\r?\n/).find((entry) => entry.startsWith("1:["));
+  if (!line) {
+    return [];
+  }
+
+  const payload = JSON.parse(line.slice(2));
+  return Array.isArray(payload) ? payload : [];
+}
+
+async function fetchLbaBoard(type) {
+  const url = getLbaRoute(type);
+  const pageResponse = await fetch(url, {
+    headers: {
+      "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",
+      accept: "text/html,application/xhtml+xml"
+    }
+  });
+
+  if (!pageResponse.ok) {
+    throw new Error(`LBA page request failed (${pageResponse.status})`);
+  }
+
+  const html = await pageResponse.text();
+  const { deploymentId, actionIds } = extractLbaMetadata(html);
+  const candidates = [...new Set([...actionIds, LBA_ACTION_FALLBACKS[type]].filter(Boolean))];
+
+  for (const actionId of candidates) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",
+        accept: "text/x-component",
+        "content-type": "text/plain;charset=UTF-8",
+        "next-action": actionId,
+        "next-router-state-tree": getLbaRouterStateTree(type),
+        ...(deploymentId ? { "x-deployment-id": deploymentId } : {})
+      },
+      body: LBA_ACTION_BODY[type]
+    });
+
+    if (!response.ok) {
+      continue;
+    }
+
+    const flights = parseLbaRscFlights(await response.text());
+    if (flights.length) {
+      return flights;
+    }
+  }
+
+  return [];
+}
+
+function normalizeLbaFlight(flight, type, selectedDate) {
+  const scheduledTime = flight.ScheduledDateTime || flight.SIBT || flight.SOBT || "";
+  const revisedTime = flight.EstimatedDateTime || flight.AODBProbableDateTime || "";
+  const actualTime = flight.ActualDateTime || flight.ALDT || flight.ATOT || "";
+  const timeSource = scheduledTime || revisedTime || actualTime;
+  const date = String(timeSource || "").slice(0, 10) || selectedDate;
+  const airline = flight.AirlineDescFormatted || flight.AirlineDesc || "Unknown airline";
+  const airlineCode = flight.AirlineIATA || "";
+  const flightNumber = airlineCode ? `${airlineCode}${flight.FlightNumber}` : String(flight.FlightNumber || "");
+  const airportName = flight.OriginDestAirportDescFormatted || flight.OriginDestAirportDesc || "";
+  const airportCode = flight.OriginDestAirportIATA || flight.OriginDestAirportICAO || "";
+  const status = flight.FlightStatusText || flight.FlightStatusDesc || "Unknown";
+  const isCancelled = Boolean(flight.FlightIsCancelled) || /cancel/i.test(status);
+  const delayMinutes = minutesBetween(scheduledTime, revisedTime);
+  const isDelayed = !isCancelled && delayMinutes >= 5;
+
+  return {
+    type,
+    date,
+    time: extractTime(scheduledTime) || extractTime(timeSource) || "--:--",
+    airline,
+    flightNumber,
+    airportName,
+    airportCode,
+    route: airportCode ? `${airportName} (${airportCode})` : airportName,
+    isJet2: /jet2/i.test(airline),
+    sourceUrl: getLbaRoute(type),
+    status,
+    isLive: true,
+    liveSource: "Leeds Bradford Airport",
+    liveStatusText: status,
+    scheduledTime,
+    revisedTime,
+    runwayTime: actualTime,
+    actualTime,
+    hasExpectedUpdate: isDifferentMinute(scheduledTime, revisedTime),
+    isCancelled,
+    isDelayed,
+    delayMinutes: isDelayed ? delayMinutes : 0,
+    terminal: flight.TerminalCode || "",
+    gate: flight.GateCode || "",
+    baggageBelt: flight.CarouselCode || "",
+    checkInDesk: [flight.CheckInFrom, flight.CheckInTo].filter(Boolean).join("-"),
+    runway: flight.Runway || "",
+    callSign: flight.CallSign || "",
+    aircraftRegistration: flight.Registration || "",
+    aircraftModel: flight.AircraftTypeDesc || flight.AircraftTypeICAO || ""
   };
 }
 
@@ -172,18 +323,31 @@ async function fetchAirportWindow(fromLocal, toLocal, apiKey) {
 
 async function getLiveFlightsForDate(selectedDate, apiKey) {
   const { fromLocal, toLocal } = getLiveWindowForToday();
-  const payload = await fetchAirportWindow(fromLocal, toLocal, apiKey);
+  const [aeroResult, lbaDeparturesResult, lbaArrivalsResult] = await Promise.allSettled([
+    apiKey ? fetchAirportWindow(fromLocal, toLocal, apiKey) : Promise.resolve({ departures: [], arrivals: [] }),
+    fetchLbaBoard("departures"),
+    fetchLbaBoard("arrivals")
+  ]);
+  const payload = aeroResult.status === "fulfilled" ? aeroResult.value : { departures: [], arrivals: [] };
   const departures = payload.departures || [];
   const arrivals = payload.arrivals || [];
+  const lbaDepartures = lbaDeparturesResult.status === "fulfilled" ? lbaDeparturesResult.value : [];
+  const lbaArrivals = lbaArrivalsResult.status === "fulfilled" ? lbaArrivalsResult.value : [];
 
   const normalizedFlights = [
     ...departures.map((flight) => normalizeFlight(flight, "departures", selectedDate)),
-    ...arrivals.map((flight) => normalizeFlight(flight, "arrivals", selectedDate))
+    ...arrivals.map((flight) => normalizeFlight(flight, "arrivals", selectedDate)),
+    ...lbaDepartures.map((flight) => normalizeLbaFlight(flight, "departures", selectedDate)),
+    ...lbaArrivals.map((flight) => normalizeLbaFlight(flight, "arrivals", selectedDate))
   ];
 
-  return normalizedFlights
+  const byKey = new Map();
+  normalizedFlights
     .filter((flight) => flight.date === selectedDate)
     .filter((flight) => flight.route)
+    .forEach((flight) => byKey.set(`${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`, flight));
+
+  return [...byKey.values()]
     .sort((left, right) => `${left.time} ${left.type}`.localeCompare(`${right.time} ${right.type}`));
 }
 
@@ -202,10 +366,6 @@ module.exports = async (req, res) => {
   }
 
   const apiKey = process.env.AERODATABOX_RAPIDAPI_KEY;
-  if (!apiKey) {
-    sendJson(res, 500, { error: "Missing AERODATABOX_RAPIDAPI_KEY" });
-    return;
-  }
 
   const requestedDate = typeof req.query?.date === "string" ? req.query.date : getTodayDateString();
   const today = getTodayDateString();
@@ -226,8 +386,8 @@ module.exports = async (req, res) => {
       date: requestedDate,
       generatedAt: new Date().toISOString(),
       source: {
-        name: "AeroDataBox",
-        baseUrl: "https://aerodatabox.com/"
+        name: apiKey ? "Leeds Bradford Airport + AeroDataBox" : "Leeds Bradford Airport",
+        baseUrl: "https://www.leedsbradfordairport.co.uk/flights/arrivals"
       },
       flights
     });

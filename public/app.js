@@ -15,8 +15,13 @@ const state = {
   liveFlightsByDate: {},
   liveStatusByDate: {},
   liveGeneratedAtByDate: {},
-  liveMessageByDate: {}
+  liveMessageByDate: {},
+  liveSourceByDate: {},
+  liveRefreshTimer: null,
+  liveRefreshInFlight: false
 };
+
+const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
 
 const jet2Toggle = document.getElementById("jet2Only");
 const showCompletedToggle = document.getElementById("showCompleted");
@@ -150,6 +155,14 @@ function getDelayMinutes(flight) {
   return Number.isFinite(delayMinutes) && delayMinutes >= 5 ? delayMinutes : 0;
 }
 
+function hasExpectedUpdate(flight) {
+  return Boolean(flight.hasExpectedUpdate) || (
+    flight.scheduledTime &&
+    flight.revisedTime &&
+    formatTime(flight.scheduledTime) !== formatTime(flight.revisedTime)
+  );
+}
+
 function isDelayedFlight(flight) {
   return Boolean(flight.isDelayed) || getDelayMinutes(flight) >= 5;
 }
@@ -190,9 +203,27 @@ function getFlightKey(flight) {
   return `${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`;
 }
 
+function mergeFlightData(staticFlight, liveFlight) {
+  return {
+    ...staticFlight,
+    ...liveFlight,
+    airportFullName: staticFlight.airportFullName || liveFlight.airportFullName,
+    airportCountryCode: staticFlight.airportCountryCode || liveFlight.airportCountryCode,
+    airportCountryName: staticFlight.airportCountryName || liveFlight.airportCountryName,
+    airportMunicipality: staticFlight.airportMunicipality || liveFlight.airportMunicipality,
+    airportIcaoCode: staticFlight.airportIcaoCode || liveFlight.airportIcaoCode,
+    airportLatitude: staticFlight.airportLatitude || liveFlight.airportLatitude,
+    airportLongitude: staticFlight.airportLongitude || liveFlight.airportLongitude,
+    routeDistanceMiles: staticFlight.routeDistanceMiles || liveFlight.routeDistanceMiles
+  };
+}
+
 function mergeLiveFlights(staticFlights, liveFlights) {
   const liveByKey = new Map(liveFlights.map((flight) => [getFlightKey(flight), flight]));
-  const mergedFlights = staticFlights.map((flight) => liveByKey.get(getFlightKey(flight)) || flight);
+  const mergedFlights = staticFlights.map((flight) => {
+    const liveFlight = liveByKey.get(getFlightKey(flight));
+    return liveFlight ? mergeFlightData(flight, liveFlight) : flight;
+  });
   const staticKeys = new Set(staticFlights.map(getFlightKey));
   const liveOnlyFlights = liveFlights.filter((flight) => !staticKeys.has(getFlightKey(flight)));
 
@@ -280,12 +311,19 @@ function createFlightRow(flight) {
   const actualTime = formatTime(actualDateTime);
   const revisedTime = formatTime(flight.revisedTime);
   const statusBadge = getStatusBadge(flight);
+  const expectedStatusText = flight.liveStatusText && /^now due/i.test(flight.liveStatusText)
+    ? flight.liveStatusText
+    : revisedTime
+      ? `Due ${revisedTime}`
+      : "";
   const timeCell = actualTime
     ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
     : isCancelledFlight(flight)
       ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled">Cancelled</span></span>`
       : isDelayedFlight(flight) && revisedTime
         ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-delayed">Delayed ${revisedTime}</span></span>`
+      : hasExpectedUpdate(flight) && expectedStatusText
+        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${expectedStatusText}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;
   const routeMeta = [
     airport?.countryName || flight.airportCountryName,
@@ -358,6 +396,7 @@ function renderFlightModal() {
     ["Status", flight.status || "Unknown"],
     ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
+    ["Expected update", hasExpectedUpdate(flight) ? (flight.liveStatusText || formatDateTime(flight.revisedTime)) : "Not available"],
     ["Delay", delayMinutes ? `${delayMinutes} minutes` : "Not available"],
     ["Cancellation", isCancelledFlight(flight) ? "Cancelled" : "Not available"],
     [getActualLabel(flight), formatDateTime(getActualDateTime(flight))],
@@ -453,8 +492,9 @@ function render() {
   const visibleFlights = getVisibleFlights();
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveStatus = state.liveStatusByDate[selectedDate];
-  const sourceBaseUrl = liveStatus === "live" ? "https://aerodatabox.com/" : state.staticSourceBaseUrl;
-  const sourceName = liveStatus === "live" ? "AeroDataBox" : "flight.info";
+  const liveSource = state.liveSourceByDate[selectedDate] || {};
+  const sourceBaseUrl = liveStatus === "live" ? liveSource.baseUrl || "https://www.leedsbradfordairport.co.uk/flights/arrivals" : state.staticSourceBaseUrl;
+  const sourceName = liveStatus === "live" ? liveSource.name || "Live airport board" : "flight.info";
   const generatedAt = liveStatus === "live" ? state.liveGeneratedAtByDate[selectedDate] : state.staticGeneratedAt;
   const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
   const liveMessage = state.liveMessageByDate[selectedDate] || "";
@@ -526,6 +566,10 @@ async function loadFlights() {
 }
 
 async function loadLiveFlightsForTodayIfAvailable() {
+  if (state.liveRefreshInFlight) {
+    return;
+  }
+
   const today = getTodayDateString();
   const liveApiUrl = getLiveApiUrl(today);
 
@@ -534,6 +578,7 @@ async function loadLiveFlightsForTodayIfAvailable() {
   }
 
   state.liveStatusByDate[today] = "loading";
+  state.liveRefreshInFlight = true;
   render();
 
   try {
@@ -557,6 +602,7 @@ async function loadLiveFlightsForTodayIfAvailable() {
     state.liveFlightsByDate[today] = payload.flights || [];
     state.liveStatusByDate[today] = "live";
     state.liveGeneratedAtByDate[today] = payload.generatedAt;
+    state.liveSourceByDate[today] = payload.source || {};
     state.liveMessageByDate[today] = "";
 
     if (state.dates[state.selectedDateIndex] === today) {
@@ -571,7 +617,21 @@ async function loadLiveFlightsForTodayIfAvailable() {
     if (state.dates[state.selectedDateIndex] === today) {
       render();
     }
+  } finally {
+    state.liveRefreshInFlight = false;
   }
+}
+
+function startLiveRefresh() {
+  if (state.liveRefreshTimer) {
+    window.clearInterval(state.liveRefreshTimer);
+  }
+
+  state.liveRefreshTimer = window.setInterval(() => {
+    if (state.dates[state.selectedDateIndex] === getTodayDateString()) {
+      loadLiveFlightsForTodayIfAvailable();
+    }
+  }, LIVE_REFRESH_INTERVAL_MS);
 }
 
 jet2Toggle.addEventListener("change", () => {
@@ -627,4 +687,7 @@ flightModal.addEventListener("click", (event) => {
   }
 });
 
-loadFlights().then(() => loadLiveFlightsForTodayIfAvailable());
+loadFlights().then(() => {
+  loadLiveFlightsForTodayIfAvailable();
+  startLiveRefresh();
+});

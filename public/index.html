@@ -117,7 +117,11 @@
             <p class="day-label">Saved sectors</p>
             <h2 class="day-date">My Roster</h2>
           </div>
-          <span class="pill roster-pill"></span>
+          <div class="roster-view-controls" aria-label="Roster view">
+            <button class="roster-view-button is-active" type="button" data-roster-view="table">List</button>
+            <button class="roster-view-button" type="button" data-roster-view="calendar">Calendar</button>
+            <span class="pill roster-pill"></span>
+          </div>
         </div>
 
         <div class="tables">
@@ -142,6 +146,17 @@
                 <tbody class="roster-body"></tbody>
               </table>
             </div>
+          </section>
+
+          <section class="table-card roster-calendar-section" hidden>
+            <div class="table-header">
+              <h3 class="roster-calendar-month"></h3>
+              <div class="calendar-nav" aria-label="Calendar month navigation">
+                <button class="calendar-nav-button" type="button" data-calendar-step="-1">Previous month</button>
+                <button class="calendar-nav-button" type="button" data-calendar-step="1">Next month</button>
+              </div>
+            </div>
+            <div class="roster-calendar-grid"></div>
           </section>
         </div>
       </article>

@@ -21,6 +21,8 @@ const state = {
   liveRefreshInFlight: false,
   rosterSelectMode: false,
   showingRoster: false,
+  rosterView: "table",
+  rosterCalendarMonth: "",
   rosterFlightKeys: []
 };
 
@@ -81,6 +83,14 @@ function formatFriendlyDate(dateString) {
   }).format(new Date(`${dateString}T12:00:00Z`));
 }
 
+function formatMonthLabel(monthKey) {
+  return new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London"
+  }).format(new Date(`${monthKey}-01T12:00:00Z`));
+}
+
 function formatTimestamp(isoString) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
@@ -122,6 +132,21 @@ function getDateTimeFromFlightTime(flight) {
   }
 
   return "";
+}
+
+function getMonthKey(dateString) {
+  return String(dateString || "").slice(0, 7);
+}
+
+function getMonthDate(monthKey) {
+  const [year, month] = String(monthKey || "").split("-").map(Number);
+  return new Date(Number.isFinite(year) ? year : new Date().getFullYear(), Number.isFinite(month) ? month - 1 : new Date().getMonth(), 1, 12);
+}
+
+function shiftMonthKey(monthKey, offset) {
+  const monthDate = getMonthDate(monthKey || getMonthKey(getTodayDateString()));
+  monthDate.setMonth(monthDate.getMonth() + offset);
+  return `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function getScheduledDateTime(flight) {
@@ -538,7 +563,7 @@ function createFlightRow(flight) {
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
-  const rosterButton = (state.rosterSelectMode || state.showingRoster) && flight.isJet2
+  const rosterButton = state.rosterSelectMode && flight.isJet2
     ? `<button class="roster-action ${isRosterFlight(flight) ? "is-selected" : ""}" type="button" aria-label="${isRosterFlight(flight) ? "Remove" : "Add"} ${flight.flightNumber} ${isRosterFlight(flight) ? "from" : "to"} roster">${isRosterFlight(flight) ? "-" : "+"}</button>`
     : "";
   row.innerHTML = `
@@ -675,14 +700,135 @@ function getRosterFlights() {
     });
 }
 
+function getRosterDepartureFlights(rosterFlights) {
+  return rosterFlights.filter((flight) => flight.type === "departures");
+}
+
+function ensureRosterCalendarMonth(rosterDepartureFlights) {
+  if (state.rosterCalendarMonth) {
+    return;
+  }
+
+  const today = getTodayDateString();
+  const nextDeparture = rosterDepartureFlights.find((flight) => flight.date >= today) || rosterDepartureFlights[0];
+  const selectedDate = state.dates[state.selectedDateIndex];
+  state.rosterCalendarMonth = getMonthKey(nextDeparture?.date || selectedDate || today);
+}
+
+function createCalendarFlightItem(flight) {
+  const item = document.createElement("div");
+  item.className = "calendar-flight";
+
+  if (state.rosterSelectMode) {
+    const removeButton = document.createElement("button");
+    removeButton.className = "roster-action is-selected";
+    removeButton.type = "button";
+    removeButton.setAttribute("aria-label", `Remove ${flight.flightNumber} from roster`);
+    removeButton.textContent = "-";
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleRosterFlight(flight);
+    });
+    item.appendChild(removeButton);
+  }
+
+  const summary = document.createElement(hasExtraDetails(flight) ? "button" : "span");
+  summary.className = "calendar-flight-summary";
+  if (summary.tagName === "BUTTON") {
+    summary.type = "button";
+    summary.addEventListener("click", () => openFlightModal(flight));
+  }
+  summary.textContent = `${flight.time} ${flight.airportCode || flight.route}`;
+  item.appendChild(summary);
+
+  return item;
+}
+
+function renderRosterCalendar(fragment, rosterDepartureFlights) {
+  ensureRosterCalendarMonth(rosterDepartureFlights);
+
+  const calendarGrid = fragment.querySelector(".roster-calendar-grid");
+  const calendarMonth = fragment.querySelector(".roster-calendar-month");
+  const monthDate = getMonthDate(state.rosterCalendarMonth);
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1, 12);
+  const daysInMonth = new Date(year, month + 1, 0, 12).getDate();
+  const leadingBlankDays = (firstDay.getDay() + 6) % 7;
+  const totalCells = Math.ceil((leadingBlankDays + daysInMonth) / 7) * 7;
+  const flightsByDate = new Map();
+
+  rosterDepartureFlights
+    .filter((flight) => getMonthKey(flight.date) === state.rosterCalendarMonth)
+    .forEach((flight) => {
+      const flightsForDate = flightsByDate.get(flight.date) || [];
+      flightsForDate.push(flight);
+      flightsByDate.set(flight.date, flightsForDate);
+    });
+
+  calendarMonth.textContent = formatMonthLabel(state.rosterCalendarMonth);
+  calendarGrid.replaceChildren();
+
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((weekday) => {
+    const heading = document.createElement("div");
+    heading.className = "calendar-weekday";
+    heading.textContent = weekday;
+    calendarGrid.appendChild(heading);
+  });
+
+  for (let cellIndex = 0; cellIndex < totalCells; cellIndex += 1) {
+    const dayNumber = cellIndex - leadingBlankDays + 1;
+    const day = document.createElement("div");
+    day.className = "calendar-day";
+
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      day.classList.add("is-empty");
+      calendarGrid.appendChild(day);
+      continue;
+    }
+
+    const dateString = `${state.rosterCalendarMonth}-${String(dayNumber).padStart(2, "0")}`;
+    const dayFlights = (flightsByDate.get(dateString) || []).sort((left, right) => {
+      return getComparableFlightTime(left) - getComparableFlightTime(right);
+    });
+    const dayLabel = document.createElement("span");
+    dayLabel.className = "calendar-day-number";
+    dayLabel.textContent = String(dayNumber);
+    day.appendChild(dayLabel);
+
+    if (dayFlights.length) {
+      day.classList.add("has-flights");
+      dayFlights.forEach((flight) => day.appendChild(createCalendarFlightItem(flight)));
+    }
+
+    calendarGrid.appendChild(day);
+  }
+}
+
 function renderRosterResults() {
   results.replaceChildren();
   const rosterFlights = getRosterFlights();
+  const rosterDepartureFlights = getRosterDepartureFlights(rosterFlights);
   const fragment = rosterTemplate.content.cloneNode(true);
   const rosterBody = fragment.querySelector(".roster-body");
+  const rosterSection = fragment.querySelector(".roster-section");
+  const calendarSection = fragment.querySelector(".roster-calendar-section");
 
   fragment.querySelector(".roster-pill").textContent = `${rosterFlights.length} sectors`;
   fragment.querySelector(".roster-table-pill").textContent = `${rosterFlights.length} saved`;
+  fragment.querySelectorAll(".roster-view-button").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.rosterView === state.rosterView);
+    button.addEventListener("click", () => {
+      state.rosterView = button.dataset.rosterView;
+      render();
+    });
+  });
+  fragment.querySelectorAll(".calendar-nav-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.rosterCalendarMonth = shiftMonthKey(state.rosterCalendarMonth, Number(button.dataset.calendarStep));
+      render();
+    });
+  });
 
   rosterBody.replaceChildren();
   if (!rosterFlights.length) {
@@ -692,6 +838,10 @@ function renderRosterResults() {
   } else {
     rosterFlights.forEach((flight) => rosterBody.appendChild(createRosterRow(flight)));
   }
+
+  rosterSection.hidden = state.rosterView !== "table";
+  calendarSection.hidden = state.rosterView !== "calendar";
+  renderRosterCalendar(fragment, rosterDepartureFlights);
 
   previousDayButton.disabled = true;
   nextDayButton.disabled = true;
@@ -934,7 +1084,6 @@ arrivalsToggle.addEventListener("click", () => {
 
 rosterSelectToggle.addEventListener("click", () => {
   state.rosterSelectMode = !state.rosterSelectMode;
-  state.showingRoster = false;
   state.jet2Only = state.rosterSelectMode ? true : state.jet2Only;
   jet2Toggle.checked = state.jet2Only;
   render();

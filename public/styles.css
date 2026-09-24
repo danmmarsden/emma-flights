@@ -255,6 +255,120 @@ h1 {
   background: rgba(255, 107, 94, 0.12);
 }
 
+.roster-view-controls,
+.calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.roster-view-button,
+.calendar-nav-button {
+  appearance: none;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background: linear-gradient(180deg, #1f2b33, #151d24);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--board-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roster-view-button.is-active {
+  color: var(--roster-accent);
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.roster-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: rgba(255, 255, 255, 0.04);
+  gap: 1px;
+}
+
+.calendar-weekday,
+.calendar-day {
+  background: var(--panel-strong);
+}
+
+.calendar-weekday {
+  padding: 10px 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.calendar-day {
+  min-height: 118px;
+  padding: 9px;
+}
+
+.calendar-day.is-empty {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025) 25%, transparent 25% 50%, rgba(255, 255, 255, 0.025) 50% 75%, transparent 75%),
+    var(--panel-strong);
+  background-size: 12px 12px;
+}
+
+.calendar-day.has-flights {
+  background:
+    linear-gradient(180deg, rgba(125, 211, 252, 0.1), rgba(125, 211, 252, 0.03)),
+    var(--panel-strong);
+}
+
+.calendar-day-number {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.calendar-flight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.calendar-flight + .calendar-flight {
+  margin-top: 6px;
+}
+
+.calendar-flight-summary {
+  appearance: none;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 6px;
+  background: rgba(9, 11, 13, 0.42);
+  color: var(--text);
+  cursor: default;
+  display: block;
+  font-family: var(--board-font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  padding: 7px 8px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.calendar-flight-summary {
+  cursor: pointer;
+}
+
 .day-header,
 .table-header {
   display: flex;
@@ -805,6 +919,39 @@ tbody tr.has-details:focus-visible td {
       "airline airline airline";
   }
 
+  .roster-calendar-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    background: transparent;
+  }
+
+  .calendar-weekday,
+  .calendar-day.is-empty {
+    display: none;
+  }
+
+  .calendar-day {
+    display: grid;
+    grid-template-columns: 3.6rem minmax(0, 1fr);
+    gap: 8px;
+    min-height: 0;
+    border: 1px solid rgba(125, 211, 252, 0.16);
+    border-radius: 8px;
+  }
+
+  .calendar-day:not(.has-flights) {
+    display: none;
+  }
+
+  .calendar-day-number {
+    margin-bottom: 0;
+    padding-top: 8px;
+  }
+
+  .calendar-flight {
+    grid-column: 2;
+  }
+
   tbody tr:last-child {
     border-bottom: 0;
   }
@@ -971,6 +1118,8 @@ tbody tr.has-details:focus-visible td {
 
   .view-toggle-button,
   .roster-toggle-button,
+  .roster-view-button,
+  .calendar-nav-button,
   .nav-button,
   .refresh-button {
     padding: 10px 9px;

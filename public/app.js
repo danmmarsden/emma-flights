@@ -199,6 +199,64 @@ function getAirlineShortcode(flight) {
     .toUpperCase() || "N/A";
 }
 
+function getAirlineLogoPath(airline) {
+  const normalizedAirline = String(airline || "").toLowerCase();
+
+  if (normalizedAirline.includes("jet2")) {
+    return "./assets/airlines/jet2.svg";
+  }
+
+  if (normalizedAirline.includes("ryanair")) {
+    return "./assets/airlines/ryanair.svg";
+  }
+
+  if (normalizedAirline.includes("klm")) {
+    return "./assets/airlines/klm.svg";
+  }
+
+  if (normalizedAirline.includes("easyjet")) {
+    return "./assets/airlines/easyjet.svg";
+  }
+
+  if (normalizedAirline.includes("tui")) {
+    return "./assets/airlines/tui.svg";
+  }
+
+  if (normalizedAirline.includes("aer lingus")) {
+    return "./assets/airlines/aer-lingus.svg";
+  }
+
+  if (normalizedAirline.includes("wizz")) {
+    return "./assets/airlines/wizz.svg";
+  }
+
+  if (normalizedAirline.includes("aurigny")) {
+    return "./assets/airlines/aurigny.svg";
+  }
+
+  return "";
+}
+
+function escapeAttribute(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function getAirlineBadge(flight) {
+  const airline = flight.airline || "Unknown airline";
+  const logoPath = getAirlineLogoPath(airline);
+  const safeAirline = escapeAttribute(airline);
+
+  if (logoPath) {
+    return `<img class="airline-logo" src="${logoPath}" alt="${safeAirline}" title="${safeAirline}" loading="lazy">`;
+  }
+
+  return `<span class="airline-badge" title="${safeAirline}">${getAirlineShortcode(flight)}</span>`;
+}
+
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveFlights = state.liveFlightsByDate[selectedDate];
@@ -351,24 +409,23 @@ function createFlightRow(flight) {
       ? `Due ${revisedTime}`
       : "";
   const timeCell = actualTime
-    ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
+    ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${actualTime}">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
     : isCancelledFlight(flight)
-      ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled">Cancelled</span></span>`
+      ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled" data-mobile="CXL">Cancelled</span></span>`
       : isDelayedFlight(flight) && revisedTime
-        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-delayed">Delayed ${revisedTime}</span></span>`
+        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-delayed" data-mobile="${revisedTime}">Delayed ${revisedTime}</span></span>`
       : hasExpectedUpdate(flight) && expectedStatusText
-        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${expectedStatusText}</span></span>`
+        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${revisedTime || expectedStatusText}">${expectedStatusText}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;
   const routeCode = flight.airportCode || airport?.iataCode || flight.route || "Not available";
   const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span></span>`;
-  const airlineShortcode = getAirlineShortcode(flight);
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
   row.innerHTML = `
     <td data-label="Time">${timeCell}</td>
     <td data-label="Flight">${flightCell}</td>
-    <td data-label="Airline"><span class="airline-badge" title="${flight.airline}">${airlineShortcode}</span></td>
+    <td data-label="Airline">${getAirlineBadge(flight)}</td>
     <td data-label="${flight.type === "departures" ? "To" : "From"}">${routeCell}</td>
   `;
 

@@ -482,6 +482,14 @@ tbody tr.has-details:focus-visible td {
   white-space: nowrap;
 }
 
+.airline-logo {
+  display: block;
+  width: 72px;
+  height: 24px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .empty-state {
   color: var(--muted);
   font-size: 0.92rem;
@@ -751,24 +759,75 @@ tbody tr.has-details:focus-visible td {
   }
 
   tbody tr {
-    grid-template-columns: minmax(4.8rem, 0.7fr) minmax(7.2rem, 1fr) minmax(4.4rem, 0.55fr);
+    grid-template-columns: 6.3rem minmax(4.4rem, 1fr) 3.1rem 3rem;
+    grid-template-areas: "time flight airline route";
+    align-items: center;
   }
 
   td {
-    padding: 10px;
-    font-size: 0.9rem;
-    letter-spacing: 0.04em;
+    padding: 10px 6px;
+    font-size: 0.88rem;
+    letter-spacing: 0.03em;
   }
 
-  .time-meta,
-  .route-meta {
-    white-space: normal;
+  td::before {
+    display: none;
   }
 
+  td:nth-child(3) {
+    padding-top: 10px;
+  }
+
+  .time-meta {
+    font-size: 0.64rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .time-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .time-meta[data-mobile] {
+    font-size: 0;
+  }
+
+  .time-meta[data-mobile]::after {
+    content: attr(data-mobile);
+    font-size: 0.64rem;
+  }
+
+  .flight-code-wrap {
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .details-icon,
   .status-badge {
-    max-width: 100%;
-    white-space: normal;
-    line-height: 1.2;
+    display: none;
+  }
+
+  .airline-logo {
+    width: 44px;
+    height: 18px;
+    margin: 0 auto;
+    object-position: center;
+  }
+
+  .airline-badge {
+    display: block;
+    text-align: center;
+  }
+
+  .route-wrap {
+    justify-items: end;
+  }
+
+  .route-main {
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   th {

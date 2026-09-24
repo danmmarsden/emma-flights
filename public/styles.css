@@ -345,6 +345,12 @@ h1 {
     var(--panel-strong);
 }
 
+.calendar-day.has-status {
+  background:
+    linear-gradient(180deg, rgba(255, 209, 102, 0.1), rgba(125, 211, 252, 0.04)),
+    var(--panel-strong);
+}
+
 .calendar-day-number {
   display: block;
   color: var(--muted);
@@ -353,18 +359,23 @@ h1 {
   margin-bottom: 7px;
 }
 
-.calendar-flight {
+.calendar-flight,
+.calendar-status {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
 }
 
-.calendar-flight + .calendar-flight {
+.calendar-flight + .calendar-flight,
+.calendar-status + .calendar-flight,
+.calendar-status-picker + .calendar-flight,
+.calendar-status-add + .calendar-flight {
   margin-top: 6px;
 }
 
-.calendar-flight-summary {
+.calendar-flight-summary,
+.calendar-status-label {
   appearance: none;
   min-width: 0;
   width: 100%;
@@ -387,6 +398,51 @@ h1 {
 
 button.calendar-flight-summary {
   cursor: pointer;
+}
+
+.calendar-status-label {
+  border-color: rgba(255, 209, 102, 0.28);
+  background: rgba(255, 209, 102, 0.14);
+  color: var(--accent);
+}
+
+.calendar-status-add {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  background: rgba(125, 211, 252, 0.1);
+  color: var(--roster-accent);
+  cursor: pointer;
+  font-family: var(--board-font);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.calendar-status-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.calendar-status-option {
+  appearance: none;
+  min-width: 0;
+  border: 1px solid rgba(255, 209, 102, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 209, 102, 0.1);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--board-font);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 5px 3px;
 }
 
 .day-header,
@@ -962,22 +1018,38 @@ tbody tr.has-details:focus-visible td {
     font-size: 0.64rem;
   }
 
-  .calendar-flight {
+  .calendar-flight,
+  .calendar-status {
     display: block;
   }
 
-  .calendar-flight .roster-action {
+  .calendar-flight .roster-action,
+  .calendar-status .roster-action,
+  .calendar-status-add {
     width: 22px;
     height: 22px;
     margin-bottom: 3px;
     font-size: 0.8rem;
   }
 
-  .calendar-flight-summary {
+  .calendar-flight-summary,
+  .calendar-status-label {
     padding: 4px;
     font-size: 0.58rem;
     line-height: 1.15;
     white-space: normal;
+  }
+
+  .calendar-status-picker {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    margin-bottom: 3px;
+  }
+
+  .calendar-status-option {
+    border-radius: 4px;
+    font-size: 0.52rem;
+    padding: 3px 2px;
   }
 
   tbody tr:last-child {

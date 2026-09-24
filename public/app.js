@@ -23,11 +23,15 @@ const state = {
   showingRoster: false,
   rosterView: "table",
   rosterCalendarMonth: "",
+  rosterStatusPickerDate: "",
+  rosterStatusesByDate: {},
   rosterFlightKeys: []
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
 const ROSTER_STORAGE_KEY = "lba-flight-tracker-roster";
+const ROSTER_STATUS_STORAGE_KEY = "lba-flight-tracker-roster-statuses";
+const ROSTER_STATUS_OPTIONS = ["RDO", "SBY", "ASB"];
 
 const jet2Toggle = document.getElementById("jet2Only");
 const showCompletedToggle = document.getElementById("showCompleted");
@@ -320,6 +324,45 @@ function loadRosterFlightKeys() {
 
 function saveRosterFlightKeys() {
   window.localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(state.rosterFlightKeys));
+}
+
+function loadRosterStatuses() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(ROSTER_STATUS_STORAGE_KEY) || "{}");
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(saved).filter(([date, status]) => {
+        return /^\d{4}-\d{2}-\d{2}$/.test(date) && ROSTER_STATUS_OPTIONS.includes(status);
+      })
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveRosterStatuses() {
+  window.localStorage.setItem(ROSTER_STATUS_STORAGE_KEY, JSON.stringify(state.rosterStatusesByDate));
+}
+
+function setRosterStatus(dateString, status) {
+  state.rosterStatusesByDate = {
+    ...state.rosterStatusesByDate,
+    [dateString]: status
+  };
+  state.rosterStatusPickerDate = "";
+  saveRosterStatuses();
+  render();
+}
+
+function removeRosterStatus(dateString) {
+  const { [dateString]: _removed, ...nextStatuses } = state.rosterStatusesByDate;
+  state.rosterStatusesByDate = nextStatuses;
+  state.rosterStatusPickerDate = "";
+  saveRosterStatuses();
+  render();
 }
 
 function isRosterFlight(flight) {
@@ -744,6 +787,64 @@ function createCalendarFlightItem(flight) {
   return item;
 }
 
+function createCalendarStatusItem(dateString, status) {
+  const item = document.createElement("div");
+  item.className = "calendar-status";
+
+  if (state.rosterSelectMode) {
+    const removeButton = document.createElement("button");
+    removeButton.className = "roster-action is-selected";
+    removeButton.type = "button";
+    removeButton.setAttribute("aria-label", `Remove ${status} from ${formatFriendlyDate(dateString)}`);
+    removeButton.textContent = "-";
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeRosterStatus(dateString);
+    });
+    item.appendChild(removeButton);
+  }
+
+  const label = document.createElement("span");
+  label.className = "calendar-status-label";
+  label.textContent = status;
+  item.appendChild(label);
+
+  return item;
+}
+
+function createCalendarStatusPicker(dateString) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "calendar-status-picker";
+
+  ROSTER_STATUS_OPTIONS.forEach((status) => {
+    const button = document.createElement("button");
+    button.className = "calendar-status-option";
+    button.type = "button";
+    button.textContent = status;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setRosterStatus(dateString, status);
+    });
+    wrapper.appendChild(button);
+  });
+
+  return wrapper;
+}
+
+function createCalendarStatusAddButton(dateString) {
+  const button = document.createElement("button");
+  button.className = "calendar-status-add";
+  button.type = "button";
+  button.setAttribute("aria-label", `Add status for ${formatFriendlyDate(dateString)}`);
+  button.textContent = "+";
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    state.rosterStatusPickerDate = state.rosterStatusPickerDate === dateString ? "" : dateString;
+    render();
+  });
+  return button;
+}
+
 function renderRosterCalendar(fragment, rosterDepartureFlights) {
   ensureRosterCalendarMonth(rosterDepartureFlights);
 
@@ -795,6 +896,18 @@ function renderRosterCalendar(fragment, rosterDepartureFlights) {
     dayLabel.className = "calendar-day-number";
     dayLabel.textContent = String(dayNumber);
     day.appendChild(dayLabel);
+
+    const status = state.rosterStatusesByDate[dateString];
+    if (status) {
+      day.classList.add("has-status");
+      day.appendChild(createCalendarStatusItem(dateString, status));
+    } else if (state.rosterSelectMode) {
+      day.appendChild(createCalendarStatusAddButton(dateString));
+    }
+
+    if (state.rosterSelectMode && state.rosterStatusPickerDate === dateString) {
+      day.appendChild(createCalendarStatusPicker(dateString));
+    }
 
     if (dayFlights.length) {
       day.classList.add("has-flights");
@@ -976,6 +1089,7 @@ async function loadFlights() {
     state.sourceBaseUrl = payload.source.baseUrl;
     state.staticSourceBaseUrl = payload.source.baseUrl;
     state.rosterFlightKeys = loadRosterFlightKeys();
+    state.rosterStatusesByDate = loadRosterStatuses();
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
     render();
   } catch (error) {
@@ -1084,6 +1198,9 @@ arrivalsToggle.addEventListener("click", () => {
 
 rosterSelectToggle.addEventListener("click", () => {
   state.rosterSelectMode = !state.rosterSelectMode;
+  if (!state.rosterSelectMode) {
+    state.rosterStatusPickerDate = "";
+  }
   state.jet2Only = state.rosterSelectMode ? true : state.jet2Only;
   jet2Toggle.checked = state.jet2Only;
   render();

@@ -51,8 +51,8 @@ function getLocalDateTimeString(date) {
 }
 
 function getLiveWindowForToday() {
-  const fromDate = new Date(Date.now() - 15 * 60 * 1000);
-  const toDate = new Date(Date.now() + 12 * 60 * 60 * 1000);
+  const fromDate = new Date();
+  const toDate = new Date(Date.now() + 11 * 60 * 60 * 1000 + 55 * 60 * 1000);
 
   return {
     fromLocal: getLocalDateTimeString(fromDate),

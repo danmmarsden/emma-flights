@@ -16,7 +16,7 @@ Then open `http://127.0.0.1:3000`.
 npm run generate:data
 ```
 
-This writes `public/data/flights.json` by scraping the public `flight.info` schedule pages starting from today and moving forward until several empty days are found.
+This writes `public/data/flights.json` by scraping the public `flight.info` schedule pages starting from today and moving forward until several empty days are found. It also writes a trimmed `public/data/airports.json` lookup from OurAirports so the app can show destination/origin country, airport metadata, and distance from LBA without a runtime dependency on an external airport API.
 
 ## Static hosting
 

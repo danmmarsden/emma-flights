@@ -360,6 +360,25 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+.route-wrap {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.route-main,
+.route-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-meta {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
 .details-icon {
   display: inline-flex;
   align-items: center;

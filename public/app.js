@@ -1,5 +1,6 @@
 const state = {
   flights: [],
+  airports: {},
   dates: [],
   generatedAt: "",
   staticGeneratedAt: "",
@@ -35,6 +36,10 @@ const flightModalGrid = document.getElementById("flightModalGrid");
 
 function getDataUrl() {
   return new URL("./data/flights.json", window.location.href).toString();
+}
+
+function getAirportsUrl() {
+  return new URL("./data/airports.json", window.location.href).toString();
 }
 
 function getLiveApiBaseUrl() {
@@ -79,6 +84,22 @@ function formatDateTime(dateTimeString) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(dateTimeString));
+}
+
+function formatDistance(miles) {
+  return Number.isFinite(miles) ? `${miles.toLocaleString("en-GB")} miles` : "Not available";
+}
+
+function getScheduledDateTime(flight) {
+  if (flight.scheduledTime) {
+    return formatDateTime(flight.scheduledTime);
+  }
+
+  if (flight.date && /^\d{2}:\d{2}$/.test(flight.time)) {
+    return formatDateTime(`${flight.date}T${flight.time}:00`);
+  }
+
+  return flight.time || "Not available";
 }
 
 function getVisibleFlights() {
@@ -136,8 +157,28 @@ function isCompletedFlight(flight, selectedDate) {
   return flight.time < getCurrentTimeString();
 }
 
+function getAirportForFlight(flight) {
+  return flight.airport ||
+    state.airports[flight.airportCode] ||
+    (flight.airportFullName ? {
+      name: flight.airportFullName,
+      countryCode: flight.airportCountryCode,
+      countryName: flight.airportCountryName,
+      municipality: flight.airportMunicipality,
+      icaoCode: flight.airportIcaoCode,
+      iataCode: flight.airportCode,
+      latitude: flight.airportLatitude,
+      longitude: flight.airportLongitude,
+      distanceMiles: flight.routeDistanceMiles
+    } : null);
+}
+
 function hasExtraDetails(flight) {
+  const airport = getAirportForFlight(flight);
+
   return Boolean(
+    airport ||
+    flight.sourceUrl ||
     flight.isLive && (
       flight.aircraftRegistration ||
       flight.aircraftModel ||
@@ -157,6 +198,14 @@ function hasExtraDetails(flight) {
 function createFlightRow(flight) {
   const row = document.createElement("tr");
   const detailsAvailable = hasExtraDetails(flight);
+  const airport = getAirportForFlight(flight);
+  const routeMeta = [
+    airport?.countryName || flight.airportCountryName,
+    formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)
+  ].filter((value) => value && value !== "Not available").join(" • ");
+  const routeCell = routeMeta
+    ? `<span class="route-wrap"><span class="route-main">${flight.route}</span><span class="route-meta">${routeMeta}</span></span>`
+    : flight.route;
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span></span>`
     : `<span class="flight-code">${flight.flightNumber}</span>`;
@@ -164,7 +213,7 @@ function createFlightRow(flight) {
     <td>${flight.time}</td>
     <td>${flightCell}</td>
     <td><span class="airline-badge">${flight.airline}</span></td>
-    <td>${flight.route}</td>
+    <td>${routeCell}</td>
   `;
 
   if (detailsAvailable) {
@@ -212,13 +261,13 @@ function renderFlightModal() {
     return;
   }
 
+  const airport = getAirportForFlight(flight);
   const details = [
-    ["Preview", "Live flight detail"],
     ["Flight", flight.flightNumber],
     ["Airline", flight.airline],
     [flight.type === "departures" ? "Destination" : "Origin", flight.route],
     ["Status", flight.status || "Unknown"],
-    ["Scheduled time", formatDateTime(flight.scheduledTime)],
+    ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
     ["Runway time", formatDateTime(flight.runwayTime)],
     ["Terminal", flight.terminal || "Not available"],
@@ -228,8 +277,16 @@ function renderFlightModal() {
     ["Runway", flight.runway || "Not available"],
     ["Call sign", flight.callSign || "Not available"],
     ["Aircraft registration", flight.aircraftRegistration || "Not available"],
-    ["Aircraft model", flight.aircraftModel || "Not available"]
-  ];
+    ["Aircraft model", flight.aircraftModel || "Not available"],
+    ["Airport name", airport?.name || "Not available"],
+    ["Airport country", airport?.countryName || "Not available"],
+    ["Airport municipality", airport?.municipality || "Not available"],
+    ["Airport codes", [airport?.iataCode || flight.airportCode, airport?.icaoCode].filter(Boolean).join(" / ") || "Not available"],
+    ["Distance from LBA", formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)],
+    ["Elevation", Number.isFinite(airport?.elevationFt) ? `${airport.elevationFt.toLocaleString("en-GB")} ft` : "Not available"],
+    ["Scheduled service", typeof airport?.scheduledService === "boolean" ? (airport.scheduledService ? "Yes" : "No") : "Not available"],
+    ["Source", flight.isLive ? "AeroDataBox live feed" : "flight.info schedule"]
+  ].filter(([, value]) => value !== "Not available");
 
   flightModalEyebrow.textContent = flight.type === "departures" ? "Departure details" : "Arrival details";
   flightModalTitle.textContent = flight.flightNumber;
@@ -342,14 +399,19 @@ async function loadFlights() {
   jumpTodayButton.disabled = true;
 
   try {
-    const response = await fetch(getDataUrl(), { cache: "no-store" });
+    const [response, airportsResponse] = await Promise.all([
+      fetch(getDataUrl(), { cache: "no-store" }),
+      fetch(getAirportsUrl(), { cache: "no-store" }).catch(() => null)
+    ]);
     const payload = await response.json();
+    const airportsPayload = airportsResponse?.ok ? await airportsResponse.json() : { airports: {} };
 
     if (!response.ok) {
       throw new Error(payload.error || "Request failed");
     }
 
     state.flights = payload.flights;
+    state.airports = airportsPayload.airports || payload.airports || {};
     state.dates = payload.dates;
     state.generatedAt = payload.generatedAt;
     state.staticGeneratedAt = payload.generatedAt;

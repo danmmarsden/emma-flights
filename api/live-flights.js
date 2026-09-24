@@ -36,13 +36,28 @@ function getTodayDateString() {
   }).format(new Date());
 }
 
-function getDateStringInZone(date, timeZone) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
+function getLocalDateTimeString(date) {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
-  }).format(date);
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function getLiveWindowForToday() {
+  const fromDate = new Date(Date.now() - 15 * 60 * 1000);
+  const toDate = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+  return {
+    fromLocal: getLocalDateTimeString(fromDate),
+    toLocal: getLocalDateTimeString(toDate)
+  };
 }
 
 function extractTime(dateTimeString) {
@@ -66,6 +81,7 @@ function normalizeFlight(flight, type, selectedDate) {
   const movement = flight.movement || (type === "departures" ? flight.arrival : flight.departure);
   const primaryMovement = type === "departures" ? flight.departure || movement : flight.arrival || movement;
   const timeSource = getBestMovementTime(primaryMovement);
+  const date = String(timeSource || "").slice(0, 10) || selectedDate;
   const airport = movement?.airport;
   const airportCode = airport?.iata || airport?.icao || "";
   const airportName = normalizeAirportName(airport);
@@ -75,7 +91,7 @@ function normalizeFlight(flight, type, selectedDate) {
 
   return {
     type,
-    date: selectedDate,
+    date,
     time: extractTime(timeSource) || "--:--",
     airline,
     flightNumber,
@@ -129,19 +145,10 @@ async function fetchAirportWindow(fromLocal, toLocal, apiKey) {
 }
 
 async function getLiveFlightsForDate(selectedDate, apiKey) {
-  const windows = [
-    [`${selectedDate}T00:00`, `${selectedDate}T11:59`],
-    [`${selectedDate}T12:00`, `${selectedDate}T23:59`]
-  ];
-
-  const responses = await Promise.all(windows.map(([fromLocal, toLocal]) => fetchAirportWindow(fromLocal, toLocal, apiKey)));
-  const departures = [];
-  const arrivals = [];
-
-  for (const payload of responses) {
-    departures.push(...(payload.departures || []));
-    arrivals.push(...(payload.arrivals || []));
-  }
+  const { fromLocal, toLocal } = getLiveWindowForToday();
+  const payload = await fetchAirportWindow(fromLocal, toLocal, apiKey);
+  const departures = payload.departures || [];
+  const arrivals = payload.arrivals || [];
 
   const normalizedFlights = [
     ...departures.map((flight) => normalizeFlight(flight, "departures", selectedDate)),
@@ -149,6 +156,7 @@ async function getLiveFlightsForDate(selectedDate, apiKey) {
   ];
 
   return normalizedFlights
+    .filter((flight) => flight.date === selectedDate)
     .filter((flight) => flight.route)
     .sort((left, right) => `${left.time} ${left.type}`.localeCompare(`${right.time} ${right.type}`));
 }

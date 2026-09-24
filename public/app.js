@@ -84,14 +84,30 @@ function formatDateTime(dateTimeString) {
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveFlights = state.liveFlightsByDate[selectedDate];
+  const staticFlights = state.flights.filter((flight) => flight.date === selectedDate);
   const flightsForSelectedDate = Array.isArray(liveFlights)
-    ? liveFlights
-    : state.flights.filter((flight) => flight.date === selectedDate);
+    ? mergeLiveFlights(staticFlights, liveFlights)
+    : staticFlights;
   const filteredFlights = flightsForSelectedDate.filter((flight) => !isCompletedFlight(flight, selectedDate));
 
   return state.jet2Only
     ? filteredFlights.filter((flight) => flight.isJet2)
     : filteredFlights;
+}
+
+function getFlightKey(flight) {
+  return `${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`;
+}
+
+function mergeLiveFlights(staticFlights, liveFlights) {
+  const liveByKey = new Map(liveFlights.map((flight) => [getFlightKey(flight), flight]));
+  const mergedFlights = staticFlights.map((flight) => liveByKey.get(getFlightKey(flight)) || flight);
+  const staticKeys = new Set(staticFlights.map(getFlightKey));
+  const liveOnlyFlights = liveFlights.filter((flight) => !staticKeys.has(getFlightKey(flight)));
+
+  return [...mergedFlights, ...liveOnlyFlights].sort((left, right) => {
+    return `${left.time} ${left.type}`.localeCompare(`${right.time} ${right.type}`);
+  });
 }
 
 function getCurrentTimeString() {

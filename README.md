@@ -62,3 +62,4 @@ When configured:
 - the selected `today` view will try the live endpoint first
 - if live data fails, the app falls back to the scheduled static dataset
 - future dates continue to use `public/data/flights.json`
+- completed flights are hidden by default after a 30-minute grace period, with a UI toggle to show them again

@@ -360,6 +360,22 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+.time-wrap {
+  display: grid;
+  gap: 4px;
+}
+
+.time-main {
+  font-weight: 700;
+}
+
+.time-meta {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .route-wrap {
   display: grid;
   gap: 4px;

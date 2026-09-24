@@ -5,6 +5,7 @@ const state = {
   generatedAt: "",
   staticGeneratedAt: "",
   jet2Only: false,
+  showCompleted: false,
   activeView: "departures",
   airportCode: "LBA",
   sourceBaseUrl: "",
@@ -18,6 +19,7 @@ const state = {
 };
 
 const jet2Toggle = document.getElementById("jet2Only");
+const showCompletedToggle = document.getElementById("showCompleted");
 const departuresToggle = document.getElementById("departuresToggle");
 const arrivalsToggle = document.getElementById("arrivalsToggle");
 const previousDayButton = document.getElementById("previousDayButton");
@@ -86,8 +88,28 @@ function formatDateTime(dateTimeString) {
   }).format(new Date(dateTimeString));
 }
 
+function formatTime(dateTimeString) {
+  if (!dateTimeString) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date(dateTimeString));
+}
+
 function formatDistance(miles) {
   return Number.isFinite(miles) ? `${miles.toLocaleString("en-GB")} miles` : "Not available";
+}
+
+function getDateTimeFromFlightTime(flight) {
+  if (flight.date && /^\d{2}:\d{2}$/.test(flight.time)) {
+    return `${flight.date}T${flight.time}:00`;
+  }
+
+  return "";
 }
 
 function getScheduledDateTime(flight) {
@@ -95,11 +117,20 @@ function getScheduledDateTime(flight) {
     return formatDateTime(flight.scheduledTime);
   }
 
-  if (flight.date && /^\d{2}:\d{2}$/.test(flight.time)) {
-    return formatDateTime(`${flight.date}T${flight.time}:00`);
+  const fallbackDateTime = getDateTimeFromFlightTime(flight);
+  if (fallbackDateTime) {
+    return formatDateTime(fallbackDateTime);
   }
 
   return flight.time || "Not available";
+}
+
+function getActualDateTime(flight) {
+  return flight.actualTime || flight.runwayTime || "";
+}
+
+function getActualLabel(flight) {
+  return flight.type === "arrivals" ? "Actual arrival" : "Actual departure";
 }
 
 function getVisibleFlights() {
@@ -109,7 +140,9 @@ function getVisibleFlights() {
   const flightsForSelectedDate = Array.isArray(liveFlights)
     ? mergeLiveFlights(staticFlights, liveFlights)
     : staticFlights;
-  const filteredFlights = flightsForSelectedDate.filter((flight) => !isCompletedFlight(flight, selectedDate));
+  const filteredFlights = state.showCompleted
+    ? flightsForSelectedDate
+    : flightsForSelectedDate.filter((flight) => !shouldHideCompletedFlight(flight, selectedDate));
 
   return state.jet2Only
     ? filteredFlights.filter((flight) => flight.isJet2)
@@ -131,30 +164,37 @@ function mergeLiveFlights(staticFlights, liveFlights) {
   });
 }
 
-function getCurrentTimeString() {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date());
+function isFlightMarkedCompleted(flight) {
+  const normalizedStatus = String(flight.status || "").toLowerCase();
+  return /arriv|land|depart/.test(normalizedStatus);
 }
 
-function isCompletedFlight(flight, selectedDate) {
-  const normalizedStatus = String(flight.status || "").toLowerCase();
-  if (normalizedStatus === "departed" || normalizedStatus === "arrived") {
+function getCompletionDateTime(flight) {
+  return getActualDateTime(flight) || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight);
+}
+
+function shouldHideCompletedFlight(flight, selectedDate) {
+  const today = getTodayDateString();
+
+  if (selectedDate > today) {
+    return false;
+  }
+
+  if (selectedDate < today) {
     return true;
   }
 
-  if (selectedDate !== getTodayDateString()) {
+  const completionDateTime = getCompletionDateTime(flight);
+  if (!completionDateTime) {
     return false;
   }
 
-  if (!/^\d{2}:\d{2}$/.test(flight.time)) {
+  if (!isFlightMarkedCompleted(flight) && !getActualDateTime(flight) && !getDateTimeFromFlightTime(flight)) {
     return false;
   }
 
-  return flight.time < getCurrentTimeString();
+  const hideAfter = new Date(completionDateTime).getTime() + 30 * 60 * 1000;
+  return Date.now() >= hideAfter;
 }
 
 function getAirportForFlight(flight) {
@@ -199,6 +239,11 @@ function createFlightRow(flight) {
   const row = document.createElement("tr");
   const detailsAvailable = hasExtraDetails(flight);
   const airport = getAirportForFlight(flight);
+  const actualDateTime = getActualDateTime(flight);
+  const actualTime = formatTime(actualDateTime);
+  const timeCell = actualTime
+    ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
+    : `<span class="time-main">${flight.time}</span>`;
   const routeMeta = [
     airport?.countryName || flight.airportCountryName,
     formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)
@@ -210,7 +255,7 @@ function createFlightRow(flight) {
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span></span>`
     : `<span class="flight-code">${flight.flightNumber}</span>`;
   row.innerHTML = `
-    <td>${flight.time}</td>
+    <td>${timeCell}</td>
     <td>${flightCell}</td>
     <td><span class="airline-badge">${flight.airline}</span></td>
     <td>${routeCell}</td>
@@ -269,7 +314,7 @@ function renderFlightModal() {
     ["Status", flight.status || "Unknown"],
     ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
-    ["Runway time", formatDateTime(flight.runwayTime)],
+    [getActualLabel(flight), formatDateTime(getActualDateTime(flight))],
     ["Terminal", flight.terminal || "Not available"],
     ["Gate", flight.gate || "Not available"],
     ["Check-in desk", flight.checkInDesk || "Not available"],
@@ -368,11 +413,12 @@ function render() {
   const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
   const liveMessage = state.liveMessageByDate[selectedDate] || "";
   statusText.textContent = state.jet2Only
-    ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}.`
-    : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}.`;
+    ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}.`
+    : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}.`;
 
   departuresToggle.classList.toggle("is-active", state.activeView === "departures");
   arrivalsToggle.classList.toggle("is-active", state.activeView === "arrivals");
+  showCompletedToggle.checked = state.showCompleted;
 
   sourceText.innerHTML = generatedAt
     ? `${liveStatus === "live"
@@ -484,6 +530,11 @@ async function loadLiveFlightsForTodayIfAvailable() {
 
 jet2Toggle.addEventListener("change", () => {
   state.jet2Only = jet2Toggle.checked;
+  render();
+});
+
+showCompletedToggle.addEventListener("change", () => {
+  state.showCompleted = showCompletedToggle.checked;
   render();
 });
 

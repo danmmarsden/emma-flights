@@ -1,5 +1,7 @@
 const AIRPORT_CODE = "LBA";
 const AERODATABOX_BASE_URL = "https://aerodatabox.p.rapidapi.com";
+const COMPLETED_FLIGHT_GRACE_MINUTES = 30;
+const LIVE_WINDOW_LIMIT_MINUTES = 12 * 60;
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, OPTIONS",
@@ -51,8 +53,8 @@ function getLocalDateTimeString(date) {
 }
 
 function getLiveWindowForToday() {
-  const fromDate = new Date();
-  const toDate = new Date(Date.now() + 11 * 60 * 60 * 1000 + 55 * 60 * 1000);
+  const fromDate = new Date(Date.now() - COMPLETED_FLIGHT_GRACE_MINUTES * 60 * 1000);
+  const toDate = new Date(Date.now() + (LIVE_WINDOW_LIMIT_MINUTES - COMPLETED_FLIGHT_GRACE_MINUTES - 5) * 60 * 1000);
 
   return {
     fromLocal: getLocalDateTimeString(fromDate),
@@ -66,7 +68,7 @@ function extractTime(dateTimeString) {
 }
 
 function getBestMovementTime(movement) {
-  return movement?.revisedTime?.local || movement?.scheduledTime?.local || movement?.runwayTime?.local || "";
+  return movement?.scheduledTime?.local || movement?.revisedTime?.local || movement?.runwayTime?.local || "";
 }
 
 function normalizeAirportName(airport) {
@@ -105,6 +107,7 @@ function normalizeFlight(flight, type, selectedDate) {
     scheduledTime: primaryMovement?.scheduledTime?.local || "",
     revisedTime: primaryMovement?.revisedTime?.local || "",
     runwayTime: primaryMovement?.runwayTime?.local || "",
+    actualTime: primaryMovement?.runwayTime?.local || "",
     terminal: primaryMovement?.terminal || "",
     gate: primaryMovement?.gate || "",
     baggageBelt: primaryMovement?.baggageBelt || "",

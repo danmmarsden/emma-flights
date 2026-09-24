@@ -1264,7 +1264,7 @@ tbody tr.has-details:focus-visible td {
   }
 
   .date-nav {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     width: 100%;
   }
 
@@ -1280,7 +1280,7 @@ tbody tr.has-details:focus-visible td {
   }
 
   .today-button {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
     text-align: center;
   }
 
@@ -1432,5 +1432,15 @@ tbody tr.has-details:focus-visible td {
 
   .flight-modal-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .date-nav {
+    flex-wrap: wrap;
+  }
+
+  .today-button {
+    flex: 1 1 100%;
   }
 }

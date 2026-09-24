@@ -253,6 +253,14 @@ h1 {
   background: rgba(255, 107, 94, 0.12);
 }
 
+.roster-storage-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .roster-view-controls,
 .calendar-nav {
   display: inline-flex;

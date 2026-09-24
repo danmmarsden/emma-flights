@@ -18,6 +18,8 @@ npm run generate:data
 
 This writes `public/data/flights.json` by scraping the public `flight.info` schedule pages starting from today and moving forward until several empty days are found. It also writes a trimmed `public/data/airports.json` lookup from OurAirports so the app can show destination/origin country, airport metadata, and distance from LBA without a runtime dependency on an external airport API.
 
+`public/data/flights.json` is a lightweight manifest. Individual day schedules are written to `public/data/flights/YYYY-MM-DD.json` so the browser only downloads the dates it needs.
+
 ## Static hosting
 
 The app is served from the `public/` directory and can run on GitHub Pages or another static host with no Node server. Regenerate `public/data/flights.json` before deploying whenever the schedule needs refreshing.
@@ -63,3 +65,5 @@ When configured:
 - if live data fails, the app falls back to the scheduled static dataset
 - future dates continue to use `public/data/flights.json`
 - completed flights are hidden by default after a 30-minute grace period, with a UI toggle to show them again
+
+Roster selections and calendar statuses are stored in the browser on the current device.

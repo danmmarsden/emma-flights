@@ -11,6 +11,7 @@ const AIRPORT_LATITUDE = 53.865898;
 const AIRPORT_LONGITUDE = -1.66057;
 const SOURCE_BASE = "https://www.flight.info";
 const OUTPUT_PATH = path.join(__dirname, "..", "public", "data", "flights.json");
+const FLIGHTS_BY_DATE_OUTPUT_DIR = path.join(__dirname, "..", "public", "data", "flights");
 const AIRPORTS_OUTPUT_PATH = path.join(__dirname, "..", "public", "data", "airports.json");
 const OURAIRPORTS_BASE = "https://davidmegginson.github.io/ourairports-data";
 const MAX_DAYS_AHEAD = 45;
@@ -242,7 +243,7 @@ async function fetchHtml(url) {
   const headerArgs = Object.entries(SOURCE_HEADERS).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
   const { stdout } = await execFileAsync("curl", ["-L", "--silent", "--show-error", ...headerArgs, url], {
     maxBuffer: 1024 * 1024 * 32,
-    timeout: 30000
+    timeout: 120000
   });
 
   return stdout;
@@ -356,8 +357,31 @@ async function generateDataset() {
 
 async function main() {
   const payload = await generateDataset();
+  const flightsByDate = new Map(payload.dates.map((date) => [date, []]));
+  payload.flights.forEach((flight) => {
+    if (!flightsByDate.has(flight.date)) {
+      flightsByDate.set(flight.date, []);
+    }
+    flightsByDate.get(flight.date).push(flight);
+  });
+  const manifest = {
+    ...payload,
+    flights: undefined,
+    flightsByDatePath: "./flights/{date}.json"
+  };
+  delete manifest.flights;
+
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
-  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  await fs.mkdir(FLIGHTS_BY_DATE_OUTPUT_DIR, { recursive: true });
+  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await Promise.all([...flightsByDate.entries()].map(([date, flights]) => {
+    return fs.writeFile(path.join(FLIGHTS_BY_DATE_OUTPUT_DIR, `${date}.json`), `${JSON.stringify({
+      date,
+      generatedAt: payload.generatedAt,
+      source: payload.source,
+      flights
+    }, null, 2)}\n`, "utf8");
+  }));
   await fs.writeFile(AIRPORTS_OUTPUT_PATH, `${JSON.stringify({
     generatedAt: payload.generatedAt,
     source: {
@@ -366,7 +390,8 @@ async function main() {
     },
     airports: payload.airports
   }, null, 2)}\n`, "utf8");
-  console.log(`Wrote ${payload.flights.length} flights across ${payload.dates.length} days to ${OUTPUT_PATH}`);
+  console.log(`Wrote ${payload.flights.length} flights across ${payload.dates.length} split day files to ${FLIGHTS_BY_DATE_OUTPUT_DIR}`);
+  console.log(`Wrote flight manifest to ${OUTPUT_PATH}`);
   console.log(`Wrote ${Object.keys(payload.airports).length} airports to ${AIRPORTS_OUTPUT_PATH}`);
 }
 

@@ -3,6 +3,8 @@ const AERODATABOX_BASE_URL = "https://aerodatabox.p.rapidapi.com";
 const LBA_BASE_URL = "https://www.leedsbradfordairport.co.uk";
 const COMPLETED_FLIGHT_GRACE_MINUTES = 30;
 const LIVE_WINDOW_LIMIT_MINUTES = 12 * 60;
+const LIVE_CACHE_TTL_MS = 60 * 1000;
+const LIVE_CACHE_STALE_MS = 5 * 60 * 1000;
 const LBA_ACTION_FALLBACKS = {
   arrivals: "c8bc44f9ed7b6bc4e8dee86b37c5559c5f013247",
   departures: "be88851dd7690048df46996c09ae47bbb9586bdb"
@@ -16,6 +18,8 @@ const CORS_HEADERS = {
   "access-control-allow-methods": "GET, OPTIONS",
   "access-control-allow-headers": "content-type"
 };
+const liveCacheByDate = new Map();
+const liveRequestsByDate = new Map();
 
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -26,7 +30,7 @@ function sendJson(res, statusCode, payload) {
 
 function setCacheHeaders(res, mode = "dynamic") {
   if (mode === "success") {
-    res.setHeader("cache-control", "public, max-age=55, s-maxage=55, stale-while-revalidate=60");
+    res.setHeader("cache-control", "public, max-age=60, s-maxage=60, stale-while-revalidate=300");
     return;
   }
 
@@ -36,6 +40,62 @@ function setCacheHeaders(res, mode = "dynamic") {
   }
 
   res.setHeader("cache-control", "no-store");
+}
+
+function getCachedLivePayload(dateString) {
+  const cached = liveCacheByDate.get(dateString);
+  if (!cached) {
+    return null;
+  }
+
+  const ageMs = Date.now() - cached.cachedAt;
+  return ageMs <= LIVE_CACHE_TTL_MS ? cached.payload : null;
+}
+
+function getStaleLivePayload(dateString) {
+  const cached = liveCacheByDate.get(dateString);
+  if (!cached) {
+    return null;
+  }
+
+  const ageMs = Date.now() - cached.cachedAt;
+  return ageMs <= LIVE_CACHE_STALE_MS ? cached.payload : null;
+}
+
+async function getCachedLiveFlightsForDate(selectedDate, apiKey) {
+  const cached = getCachedLivePayload(selectedDate);
+  if (cached) {
+    return cached;
+  }
+
+  if (!liveRequestsByDate.has(selectedDate)) {
+    liveRequestsByDate.set(selectedDate, getLiveFlightsForDate(selectedDate, apiKey)
+      .then((flights) => {
+        const payload = {
+          airport: {
+            code: AIRPORT_CODE,
+            timeZone: "Europe/London"
+          },
+          date: selectedDate,
+          generatedAt: new Date().toISOString(),
+          source: {
+            name: apiKey ? "Leeds Bradford Airport + AeroDataBox" : "Leeds Bradford Airport",
+            baseUrl: "https://www.leedsbradfordairport.co.uk/flights/arrivals"
+          },
+          flights
+        };
+        liveCacheByDate.set(selectedDate, {
+          cachedAt: Date.now(),
+          payload
+        });
+        return payload;
+      })
+      .finally(() => {
+        liveRequestsByDate.delete(selectedDate);
+      }));
+  }
+
+  return liveRequestsByDate.get(selectedDate);
 }
 
 function getTodayDateString() {
@@ -387,22 +447,20 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const flights = await getLiveFlightsForDate(requestedDate, apiKey);
+    const payload = await getCachedLiveFlightsForDate(requestedDate, apiKey);
     setCacheHeaders(res, "success");
-    sendJson(res, 200, {
-      airport: {
-        code: AIRPORT_CODE,
-        timeZone: "Europe/London"
-      },
-      date: requestedDate,
-      generatedAt: new Date().toISOString(),
-      source: {
-        name: apiKey ? "Leeds Bradford Airport + AeroDataBox" : "Leeds Bradford Airport",
-        baseUrl: "https://www.leedsbradfordairport.co.uk/flights/arrivals"
-      },
-      flights
-    });
+    sendJson(res, 200, payload);
   } catch (error) {
+    const stalePayload = getStaleLivePayload(requestedDate);
+    if (stalePayload) {
+      setCacheHeaders(res, "rate-limit");
+      sendJson(res, 200, {
+        ...stalePayload,
+        message: "Live refresh failed, showing recently cached live data."
+      });
+      return;
+    }
+
     if (String(error.message).includes("(429)")) {
       setCacheHeaders(res, "rate-limit");
     } else {

@@ -1,5 +1,7 @@
 const state = {
   flights: [],
+  staticFlightsByDate: {},
+  staticFlightLoadsByDate: {},
   airports: {},
   dates: [],
   generatedAt: "",
@@ -55,6 +57,10 @@ const flightModalGrid = document.getElementById("flightModalGrid");
 
 function getDataUrl() {
   return new URL("./data/flights.json", window.location.href).toString();
+}
+
+function getFlightsForDateUrl(dateString) {
+  return new URL(`./data/flights/${dateString}.json`, window.location.href).toString();
 }
 
 function getAirportsUrl() {
@@ -406,7 +412,8 @@ function isRosterFlight(flight) {
 
 function getFlightsForDate(dateString) {
   const liveFlights = state.liveFlightsByDate[dateString];
-  const staticFlights = state.flights.filter((flight) => flight.date === dateString);
+  const staticFlights = state.staticFlightsByDate[dateString] ||
+    state.flights.filter((flight) => flight.date === dateString);
 
   return Array.isArray(liveFlights)
     ? mergeLiveFlights(staticFlights, liveFlights)
@@ -576,23 +583,26 @@ function shouldHideCompletedFlight(flight, selectedDate) {
   return Date.now() >= hideAfter;
 }
 
-function goToPreviousDay() {
+async function goToPreviousDay() {
   state.showingRoster = false;
   state.selectedDateIndex = Math.max(state.selectedDateIndex - 1, 0);
+  await ensureStaticFlightsForDate(state.dates[state.selectedDateIndex]);
   render();
 }
 
-function goToNextDay() {
+async function goToNextDay() {
   state.showingRoster = false;
   state.selectedDateIndex = Math.min(state.selectedDateIndex + 1, state.dates.length - 1);
+  await ensureStaticFlightsForDate(state.dates[state.selectedDateIndex]);
   render();
 }
 
-function jumpToToday() {
+async function jumpToToday() {
   const todayIndex = state.dates.indexOf(getTodayDateString());
   if (todayIndex >= 0) {
     state.showingRoster = false;
     state.selectedDateIndex = todayIndex;
+    await ensureStaticFlightsForDate(state.dates[state.selectedDateIndex]);
     render();
   }
 }
@@ -1132,13 +1142,44 @@ function getTodayDateString() {
   }).format(new Date());
 }
 
+function getRosterDatesFromKeys() {
+  return [...new Set(state.rosterFlightKeys.map((key) => key.split("|")[0]).filter(Boolean))];
+}
+
+async function ensureStaticFlightsForDate(dateString) {
+  if (!dateString || state.staticFlightsByDate[dateString] || state.staticFlightLoadsByDate[dateString]) {
+    return state.staticFlightLoadsByDate[dateString] || Promise.resolve();
+  }
+
+  state.staticFlightLoadsByDate[dateString] = fetch(getFlightsForDateUrl(dateString))
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Could not load flights for ${dateString}`);
+      }
+      const payload = await response.json();
+      state.staticFlightsByDate[dateString] = Array.isArray(payload.flights) ? payload.flights : [];
+    })
+    .catch(() => {
+      state.staticFlightsByDate[dateString] = [];
+    })
+    .finally(() => {
+      delete state.staticFlightLoadsByDate[dateString];
+    });
+
+  return state.staticFlightLoadsByDate[dateString];
+}
+
+async function ensureStaticFlightsForDates(dateStrings) {
+  await Promise.all([...new Set(dateStrings.filter(Boolean))].map(ensureStaticFlightsForDate));
+}
+
 async function loadFlights() {
   statusText.textContent = "Loading flights...";
 
   try {
     const [response, airportsResponse] = await Promise.all([
-      fetch(getDataUrl(), { cache: "no-store" }),
-      fetch(getAirportsUrl(), { cache: "no-store" }).catch(() => null)
+      fetch(getDataUrl()),
+      fetch(getAirportsUrl()).catch(() => null)
     ]);
     const payload = await response.json();
     const airportsPayload = airportsResponse?.ok ? await airportsResponse.json() : { airports: {} };
@@ -1147,7 +1188,14 @@ async function loadFlights() {
       throw new Error(payload.error || "Request failed");
     }
 
-    state.flights = payload.flights;
+    state.flights = Array.isArray(payload.flights) ? payload.flights : [];
+    state.staticFlightsByDate = state.flights.reduce((flightsByDate, flight) => {
+      if (!flightsByDate[flight.date]) {
+        flightsByDate[flight.date] = [];
+      }
+      flightsByDate[flight.date].push(flight);
+      return flightsByDate;
+    }, {});
     state.airports = airportsPayload.airports || payload.airports || {};
     state.dates = payload.dates;
     state.generatedAt = payload.generatedAt;
@@ -1159,6 +1207,10 @@ async function loadFlights() {
     state.rosterFlightSnapshotsByKey = loadRosterFlightSnapshots();
     state.rosterStatusesByDate = loadRosterStatuses();
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
+    await ensureStaticFlightsForDates([
+      state.dates[state.selectedDateIndex],
+      ...getRosterDatesFromKeys()
+    ]);
     render();
   } catch (error) {
     results.replaceChildren();
@@ -1184,7 +1236,7 @@ async function loadLiveFlightsForTodayIfAvailable() {
   render();
 
   try {
-    const response = await fetch(liveApiUrl, { cache: "no-store" });
+    const response = await fetch(liveApiUrl);
     const payload = await response.json();
 
     if (!response.ok) {
@@ -1258,18 +1310,25 @@ arrivalsToggle.addEventListener("click", () => {
   render();
 });
 
-rosterSelectToggle.addEventListener("click", () => {
+rosterSelectToggle.addEventListener("click", async () => {
   state.rosterSelectMode = !state.rosterSelectMode;
   if (!state.rosterSelectMode) {
     state.rosterStatusPickerDate = "";
   }
   state.jet2Only = state.rosterSelectMode ? true : state.jet2Only;
   jet2Toggle.checked = state.jet2Only;
+  if (state.rosterSelectMode) {
+    const selectedDate = state.dates[state.selectedDateIndex];
+    await ensureStaticFlightsForDates(selectedDate ? [selectedDate, getNextDateString(selectedDate)] : []);
+  }
   render();
 });
 
-myRosterToggle.addEventListener("click", () => {
+myRosterToggle.addEventListener("click", async () => {
   state.showingRoster = !state.showingRoster;
+  if (state.showingRoster) {
+    await ensureStaticFlightsForDates(getRosterDatesFromKeys());
+  }
   render();
 });
 

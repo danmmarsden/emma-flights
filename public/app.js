@@ -418,7 +418,26 @@ function createFlightRow(flight) {
         ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${revisedTime || expectedStatusText}">${expectedStatusText}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;
   const routeCode = flight.airportCode || airport?.iataCode || flight.route || "Not available";
-  const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span></span>`;
+  const routeName = flight.airportName || airport?.municipality || airport?.name || flight.route || "";
+  const routeMeta = [
+    routeName && routeName !== routeCode ? routeName : "",
+    airport?.countryName || flight.airportCountryName,
+    formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)
+  ].filter((value) => value && value !== "Not available").join(" • ");
+  const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span>${routeMeta ? `<span class="route-meta">${routeMeta}</span>` : ""}</span>`;
+  const statusCell = flight.liveStatusText || flight.status || "Not available";
+  const infoItems = flight.type === "departures"
+    ? [
+        flight.gate ? `Gate ${flight.gate}` : "",
+        flight.checkInDesk ? `Desk ${flight.checkInDesk}` : "",
+        flight.terminal || ""
+      ]
+    : [
+        flight.baggageBelt ? `Belt ${flight.baggageBelt}` : "",
+        flight.terminal || "",
+        flight.gate ? `Gate ${flight.gate}` : ""
+      ];
+  const infoCell = infoItems.filter(Boolean).join(" • ") || "Not available";
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
@@ -427,6 +446,8 @@ function createFlightRow(flight) {
     <td data-label="Flight">${flightCell}</td>
     <td data-label="Airline">${getAirlineBadge(flight)}</td>
     <td data-label="${flight.type === "departures" ? "To" : "From"}">${routeCell}</td>
+    <td data-label="Status"><span class="desktop-detail">${statusCell}</span></td>
+    <td data-label="Info"><span class="desktop-detail">${infoCell}</span></td>
   `;
 
   if (detailsAvailable) {

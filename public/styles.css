@@ -47,7 +47,7 @@ body::before {
 }
 
 .page-shell {
-  width: min(1260px, calc(100% - 28px));
+  width: calc(100% - 28px);
   margin: 0 auto;
   padding: 28px 0 48px;
   position: relative;
@@ -239,7 +239,7 @@ h1 {
 
 .tables {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 18px;
   margin-top: 18px;
 }
@@ -323,7 +323,7 @@ td {
 
 th:nth-child(1),
 td:nth-child(1) {
-  width: 8.5rem;
+  width: 10rem;
 }
 
 th:nth-child(2),
@@ -331,9 +331,24 @@ td:nth-child(2) {
   width: 11rem;
 }
 
+th:nth-child(3),
+td:nth-child(3) {
+  width: 9rem;
+}
+
 th:nth-child(4),
 td:nth-child(4) {
-  width: 7rem;
+  width: auto;
+}
+
+th:nth-child(5),
+td:nth-child(5) {
+  width: 13rem;
+}
+
+th:nth-child(6),
+td:nth-child(6) {
+  width: 14rem;
 }
 
 tbody tr:hover td {
@@ -408,6 +423,17 @@ tbody tr:last-child td {
 .route-main,
 .route-meta {
   overflow-wrap: anywhere;
+}
+
+.route-main {
+  font-weight: 700;
+}
+
+.desktop-detail {
+  color: var(--text);
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
 }
 
 .route-meta {
@@ -700,6 +726,13 @@ tbody tr.has-details:focus-visible td {
     text-align: right;
   }
 
+  th:nth-child(5),
+  th:nth-child(6),
+  td:nth-child(5),
+  td:nth-child(6) {
+    display: none;
+  }
+
   .flight-code-wrap {
     align-items: flex-start;
   }
@@ -779,9 +812,10 @@ tbody tr.has-details:focus-visible td {
   }
 
   .time-meta {
-    font-size: 0.64rem;
-    letter-spacing: 0.02em;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
     white-space: nowrap;
+    font-weight: 700;
   }
 
   .time-wrap {
@@ -796,7 +830,7 @@ tbody tr.has-details:focus-visible td {
 
   .time-meta[data-mobile]::after {
     content: attr(data-mobile);
-    font-size: 0.64rem;
+    font-size: 0.78rem;
   }
 
   .flight-code-wrap {
@@ -825,6 +859,10 @@ tbody tr.has-details:focus-visible td {
     justify-items: end;
   }
 
+  .route-meta {
+    display: none;
+  }
+
   .route-main {
     font-weight: 700;
     white-space: nowrap;
@@ -832,11 +870,6 @@ tbody tr.has-details:focus-visible td {
 
   th {
     font-size: 0.72rem;
-  }
-
-  td {
-    font-size: 0.96rem;
-    letter-spacing: 0.05em;
   }
 
   .flight-modal-card {

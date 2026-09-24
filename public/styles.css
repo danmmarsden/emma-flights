@@ -1061,12 +1061,18 @@ tbody tr.has-details:focus-visible td {
   }
 
   .calendar-flight .roster-action,
-  .calendar-status .roster-action,
-  .calendar-status-add {
+  .calendar-status .roster-action {
     width: 22px;
     height: 22px;
     margin-bottom: 3px;
     font-size: 0.8rem;
+  }
+
+  .calendar-status-add {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 4px;
+    font-size: 1.05rem;
   }
 
   .calendar-flight-summary,

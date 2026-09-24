@@ -343,21 +343,16 @@ function createFlightRow(flight) {
       : hasExpectedUpdate(flight) && expectedStatusText
         ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${expectedStatusText}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;
-  const routeMeta = [
-    airport?.countryName || flight.airportCountryName,
-    formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)
-  ].filter((value) => value && value !== "Not available").join(" • ");
-  const routeCell = routeMeta
-    ? `<span class="route-wrap"><span class="route-main">${flight.route}</span><span class="route-meta">${routeMeta}</span></span>`
-    : flight.route;
+  const routeCode = flight.airportCode || airport?.iataCode || flight.route || "Not available";
+  const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span></span>`;
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
   row.innerHTML = `
-    <td>${timeCell}</td>
-    <td>${flightCell}</td>
-    <td><span class="airline-badge">${flight.airline}</span></td>
-    <td>${routeCell}</td>
+    <td data-label="Time">${timeCell}</td>
+    <td data-label="Flight">${flightCell}</td>
+    <td data-label="Airline"><span class="airline-badge">${flight.airline}</span></td>
+    <td data-label="${flight.type === "departures" ? "To" : "From"}">${routeCell}</td>
   `;
 
   if (detailsAvailable) {

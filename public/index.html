@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>LBA Arrivals & Departures</title>
+    <title>LBA Flight Tracker</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <main class="page-shell">
       <section class="hero">
-        <h1>LBA Arrivals &amp; Departures</h1>
-        <p class="intro">
-          Step through LBA schedule data day by day, with a quick Jet2-only filter and no server dependency in production.
-        </p>
+        <h1>LBA Flight Tracker</h1>
 
         <div class="controls">
           <div class="day-nav" aria-label="Day navigation">
@@ -43,11 +40,11 @@
 
         <div class="meta-row">
           <p id="statusText" class="status-text">Loading flights...</p>
-          <p id="sourceText" class="source-text"></p>
         </div>
       </section>
 
       <section id="results" class="results-grid" aria-live="polite"></section>
+      <p id="sourceText" class="source-text source-footer"></p>
     </main>
 
     <template id="dayTemplate">

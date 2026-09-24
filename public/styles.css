@@ -56,7 +56,7 @@ body::before {
 .hero {
   padding: 24px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 22%),
     linear-gradient(180deg, #1b2026, #13171b);
@@ -65,20 +65,12 @@ body::before {
 
 h1 {
   margin: 0;
-  font-size: clamp(2.1rem, 6vw, 4.5rem);
-  line-height: 0.95;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent);
   text-shadow: 0 0 18px rgba(255, 191, 71, 0.16);
-}
-
-.intro {
-  margin: 16px 0 0;
-  max-width: 72ch;
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: 0.95rem;
 }
 
 .controls {
@@ -181,6 +173,12 @@ h1 {
   color: var(--accent);
 }
 
+.source-footer {
+  margin-top: 18px;
+  padding: 0 4px;
+  line-height: 1.5;
+}
+
 .results-grid {
   display: grid;
   gap: 18px;
@@ -190,7 +188,7 @@ h1 {
 .day-card {
   background: linear-gradient(180deg, #161a1e, #0f1216);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 22px;
 }
@@ -248,7 +246,7 @@ h1 {
 
 .table-card {
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--panel-strong);
 }
@@ -274,7 +272,7 @@ table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 thead tr {
@@ -304,7 +302,7 @@ td > * {
 
 th,
 td {
-  height: 56px;
+  min-height: 56px;
 }
 
 th {
@@ -317,9 +315,25 @@ td {
     linear-gradient(180deg, #15191d, #101317);
   color: var(--text);
   font-size: 1rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
   text-transform: uppercase;
   position: relative;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+  width: 8.5rem;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+  width: 11rem;
+}
+
+th:nth-child(4),
+td:nth-child(4) {
+  width: 7rem;
 }
 
 tbody tr:hover td {
@@ -343,7 +357,7 @@ td:nth-child(2) {
 }
 
 td {
-  padding: 0 12px;
+  padding: 12px;
 }
 
 tbody tr:last-child td {
@@ -355,8 +369,9 @@ tbody tr:last-child td {
 }
 
 .flight-code-wrap {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -392,9 +407,7 @@ tbody tr:last-child td {
 
 .route-main,
 .route-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .route-meta {
@@ -459,13 +472,14 @@ tbody tr.has-details:focus-visible td {
 }
 
 .airline-badge {
-  display: inline-flex;
+  display: inline;
   align-items: center;
   padding: 0;
   border-radius: 0;
   background: transparent;
   color: inherit;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .empty-state {
@@ -581,6 +595,110 @@ tbody tr.has-details:focus-visible td {
   h1 {
     max-width: none;
   }
+
+  .table-wrap {
+    overflow-x: visible;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+  }
+
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  tbody {
+    display: grid;
+  }
+
+  tbody tr {
+    display: grid;
+    grid-template-columns: minmax(5.8rem, 0.8fr) minmax(8rem, 1.2fr) minmax(6rem, 0.7fr);
+    grid-template-areas:
+      "time flight route"
+      "airline airline airline";
+    border-bottom: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0 49%, rgba(0, 0, 0, 0.2) 49% 51%, rgba(255, 255, 255, 0.015) 51% 100%),
+      linear-gradient(180deg, #15191d, #101317);
+  }
+
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  td {
+    width: auto;
+    min-height: 0;
+    border-bottom: 0;
+    background: transparent;
+    padding: 12px;
+  }
+
+  tbody tr:hover td,
+  tbody tr.has-details:hover td,
+  tbody tr.has-details:focus-visible td {
+    background: transparent;
+  }
+
+  td::after {
+    display: none;
+  }
+
+  td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  td:nth-child(1) {
+    grid-area: time;
+    width: auto;
+  }
+
+  td:nth-child(2) {
+    grid-area: flight;
+    width: auto;
+  }
+
+  td:nth-child(3) {
+    grid-area: airline;
+    width: auto;
+    padding-top: 0;
+  }
+
+  td:nth-child(4) {
+    grid-area: route;
+    width: auto;
+    text-align: right;
+  }
+
+  td:nth-child(4)::before {
+    text-align: right;
+  }
+
+  .flight-code-wrap {
+    align-items: flex-start;
+  }
+
+  .route-wrap {
+    justify-items: end;
+  }
 }
 
 @media (max-width: 640px) {
@@ -617,6 +735,40 @@ tbody tr.has-details:focus-visible td {
   .toggle {
     width: 100%;
     justify-content: center;
+  }
+
+  .day-header,
+  .table-header {
+    align-items: flex-start;
+  }
+
+  .day-header {
+    flex-direction: column;
+  }
+
+  .table-header {
+    gap: 10px;
+  }
+
+  tbody tr {
+    grid-template-columns: minmax(4.8rem, 0.7fr) minmax(7.2rem, 1fr) minmax(4.4rem, 0.55fr);
+  }
+
+  td {
+    padding: 10px;
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+
+  .time-meta,
+  .route-meta {
+    white-space: normal;
+  }
+
+  .status-badge {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.2;
   }
 
   th {

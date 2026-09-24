@@ -133,6 +133,43 @@ function getActualLabel(flight) {
   return flight.type === "arrivals" ? "Actual arrival" : "Actual departure";
 }
 
+function isCancelledFlight(flight) {
+  return Boolean(flight.isCancelled) || /cancel/i.test(String(flight.status || ""));
+}
+
+function getDelayMinutes(flight) {
+  if (Number.isFinite(flight.delayMinutes) && flight.delayMinutes > 0) {
+    return flight.delayMinutes;
+  }
+
+  if (!flight.scheduledTime || !flight.revisedTime) {
+    return 0;
+  }
+
+  const delayMinutes = Math.round((new Date(flight.revisedTime).getTime() - new Date(flight.scheduledTime).getTime()) / 60000);
+  return Number.isFinite(delayMinutes) && delayMinutes >= 5 ? delayMinutes : 0;
+}
+
+function isDelayedFlight(flight) {
+  return Boolean(flight.isDelayed) || getDelayMinutes(flight) >= 5;
+}
+
+function getStatusBadge(flight) {
+  if (isCancelledFlight(flight)) {
+    return { label: "Cancelled", tone: "cancelled" };
+  }
+
+  if (isDelayedFlight(flight)) {
+    return { label: "Delayed", tone: "delayed" };
+  }
+
+  if (getActualDateTime(flight)) {
+    return { label: flight.type === "arrivals" ? "Arrived" : "Departed", tone: "completed" };
+  }
+
+  return null;
+}
+
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveFlights = state.liveFlightsByDate[selectedDate];
@@ -241,8 +278,14 @@ function createFlightRow(flight) {
   const airport = getAirportForFlight(flight);
   const actualDateTime = getActualDateTime(flight);
   const actualTime = formatTime(actualDateTime);
+  const revisedTime = formatTime(flight.revisedTime);
+  const statusBadge = getStatusBadge(flight);
   const timeCell = actualTime
     ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
+    : isCancelledFlight(flight)
+      ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled">Cancelled</span></span>`
+      : isDelayedFlight(flight) && revisedTime
+        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-delayed">Delayed ${revisedTime}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;
   const routeMeta = [
     airport?.countryName || flight.airportCountryName,
@@ -252,8 +295,8 @@ function createFlightRow(flight) {
     ? `<span class="route-wrap"><span class="route-main">${flight.route}</span><span class="route-meta">${routeMeta}</span></span>`
     : flight.route;
   const flightCell = detailsAvailable
-    ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span></span>`
-    : `<span class="flight-code">${flight.flightNumber}</span>`;
+    ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
+    : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
   row.innerHTML = `
     <td>${timeCell}</td>
     <td>${flightCell}</td>
@@ -307,6 +350,7 @@ function renderFlightModal() {
   }
 
   const airport = getAirportForFlight(flight);
+  const delayMinutes = getDelayMinutes(flight);
   const details = [
     ["Flight", flight.flightNumber],
     ["Airline", flight.airline],
@@ -314,6 +358,8 @@ function renderFlightModal() {
     ["Status", flight.status || "Unknown"],
     ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
+    ["Delay", delayMinutes ? `${delayMinutes} minutes` : "Not available"],
+    ["Cancellation", isCancelledFlight(flight) ? "Cancelled" : "Not available"],
     [getActualLabel(flight), formatDateTime(getActualDateTime(flight))],
     ["Terminal", flight.terminal || "Not available"],
     ["Gate", flight.gate || "Not available"],

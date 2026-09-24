@@ -67,6 +67,19 @@ function extractTime(dateTimeString) {
   return match ? match[1] : "";
 }
 
+function minutesBetween(startDateTime, endDateTime) {
+  if (!startDateTime || !endDateTime) {
+    return 0;
+  }
+
+  const diffMs = new Date(endDateTime).getTime() - new Date(startDateTime).getTime();
+  if (!Number.isFinite(diffMs)) {
+    return 0;
+  }
+
+  return Math.round(diffMs / 60000);
+}
+
 function getBestMovementTime(movement) {
   return movement?.scheduledTime?.local || movement?.revisedTime?.local || movement?.runwayTime?.local || "";
 }
@@ -90,6 +103,13 @@ function normalizeFlight(flight, type, selectedDate) {
   const route = airportCode ? `${airportName} (${airportCode})` : airportName;
   const airline = flight.airline?.name || "Unknown airline";
   const flightNumber = flight.airline?.iata ? `${flight.airline.iata}${flight.number}` : flight.number;
+  const scheduledTime = primaryMovement?.scheduledTime?.local || "";
+  const revisedTime = primaryMovement?.revisedTime?.local || "";
+  const actualTime = primaryMovement?.runwayTime?.local || "";
+  const status = flight.status || "Unknown";
+  const delayMinutes = minutesBetween(scheduledTime, revisedTime);
+  const isCancelled = /cancel/i.test(status);
+  const isDelayed = !isCancelled && delayMinutes >= 5;
 
   return {
     type,
@@ -102,12 +122,15 @@ function normalizeFlight(flight, type, selectedDate) {
     route,
     isJet2: /jet2/i.test(airline),
     sourceUrl: null,
-    status: flight.status || "Unknown",
+    status,
     isLive: true,
-    scheduledTime: primaryMovement?.scheduledTime?.local || "",
-    revisedTime: primaryMovement?.revisedTime?.local || "",
-    runwayTime: primaryMovement?.runwayTime?.local || "",
-    actualTime: primaryMovement?.runwayTime?.local || "",
+    scheduledTime,
+    revisedTime,
+    runwayTime: actualTime,
+    actualTime,
+    isCancelled,
+    isDelayed,
+    delayMinutes: isDelayed ? delayMinutes : 0,
     terminal: primaryMovement?.terminal || "",
     gate: primaryMovement?.gate || "",
     baggageBelt: primaryMovement?.baggageBelt || "",

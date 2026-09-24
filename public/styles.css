@@ -376,6 +376,14 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
+.time-meta.is-delayed {
+  color: var(--accent);
+}
+
+.time-meta.is-cancelled {
+  color: var(--danger);
+}
+
 .route-wrap {
   display: grid;
   gap: 4px;
@@ -407,6 +415,36 @@ tbody tr:last-child td {
   color: var(--accent);
   font-size: 0.72rem;
   line-height: 1;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge.is-delayed {
+  color: var(--accent);
+  background: rgba(255, 209, 102, 0.12);
+  border-color: rgba(255, 209, 102, 0.24);
+}
+
+.status-badge.is-cancelled {
+  color: var(--danger);
+  background: rgba(255, 107, 94, 0.1);
+  border-color: rgba(255, 107, 94, 0.24);
+}
+
+.status-badge.is-completed {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 tbody tr.has-details {

@@ -18,15 +18,21 @@ const state = {
   liveMessageByDate: {},
   liveSourceByDate: {},
   liveRefreshTimer: null,
-  liveRefreshInFlight: false
+  liveRefreshInFlight: false,
+  rosterSelectMode: false,
+  showingRoster: false,
+  rosterFlightKeys: []
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
+const ROSTER_STORAGE_KEY = "lba-flight-tracker-roster";
 
 const jet2Toggle = document.getElementById("jet2Only");
 const showCompletedToggle = document.getElementById("showCompleted");
 const departuresToggle = document.getElementById("departuresToggle");
 const arrivalsToggle = document.getElementById("arrivalsToggle");
+const rosterSelectToggle = document.getElementById("rosterSelectToggle");
+const myRosterToggle = document.getElementById("myRosterToggle");
 const previousDayButton = document.getElementById("previousDayButton");
 const nextDayButton = document.getElementById("nextDayButton");
 const jumpTodayButton = document.getElementById("jumpTodayButton");
@@ -34,6 +40,7 @@ const results = document.getElementById("results");
 const statusText = document.getElementById("statusText");
 const sourceText = document.getElementById("sourceText");
 const dayTemplate = document.getElementById("dayTemplate");
+const rosterTemplate = document.getElementById("rosterTemplate");
 const flightModal = document.getElementById("flightModal");
 const closeFlightModalButton = document.getElementById("closeFlightModalButton");
 const flightModalEyebrow = document.getElementById("flightModalEyebrow");
@@ -259,11 +266,7 @@ function getAirlineBadge(flight) {
 
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
-  const liveFlights = state.liveFlightsByDate[selectedDate];
-  const staticFlights = state.flights.filter((flight) => flight.date === selectedDate);
-  const flightsForSelectedDate = Array.isArray(liveFlights)
-    ? mergeLiveFlights(staticFlights, liveFlights)
-    : staticFlights;
+  const flightsForSelectedDate = getFlightsForDate(selectedDate);
   const filteredFlights = state.showCompleted
     ? flightsForSelectedDate
     : flightsForSelectedDate.filter((flight) => !shouldHideCompletedFlight(flight, selectedDate));
@@ -275,6 +278,36 @@ function getVisibleFlights() {
 
 function getFlightKey(flight) {
   return `${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`;
+}
+
+function getRosterFlightKey(flight) {
+  return `${flight.date}|${getFlightKey(flight)}`;
+}
+
+function loadRosterFlightKeys() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(ROSTER_STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter((key) => typeof key === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRosterFlightKeys() {
+  window.localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(state.rosterFlightKeys));
+}
+
+function isRosterFlight(flight) {
+  return state.rosterFlightKeys.includes(getRosterFlightKey(flight));
+}
+
+function getFlightsForDate(dateString) {
+  const liveFlights = state.liveFlightsByDate[dateString];
+  const staticFlights = state.flights.filter((flight) => flight.date === dateString);
+
+  return Array.isArray(liveFlights)
+    ? mergeLiveFlights(staticFlights, liveFlights)
+    : staticFlights;
 }
 
 function mergeFlightData(staticFlight, liveFlight) {
@@ -306,17 +339,86 @@ function mergeLiveFlights(staticFlights, liveFlights) {
   });
 }
 
+function getComparableFlightTime(flight) {
+  const dateTime = flight.scheduledTime || getDateTimeFromFlightTime(flight) || flight.revisedTime || getActualDateTime(flight);
+  const time = getDateTimeMs(dateTime);
+  return Number.isFinite(time) ? time : 0;
+}
+
+function findExpectedReturnFlight(flight) {
+  if (!flight.isJet2 || !flight.airportCode) {
+    return null;
+  }
+
+  const oppositeType = flight.type === "departures" ? "arrivals" : "departures";
+  const selectedTime = getComparableFlightTime(flight);
+  const candidates = getFlightsForDate(flight.date)
+    .filter((candidate) => candidate.isJet2)
+    .filter((candidate) => candidate.type === oppositeType)
+    .filter((candidate) => candidate.airportCode === flight.airportCode)
+    .filter((candidate) => getRosterFlightKey(candidate) !== getRosterFlightKey(flight))
+    .sort((left, right) => getComparableFlightTime(left) - getComparableFlightTime(right));
+
+  return candidates.find((candidate) => getComparableFlightTime(candidate) >= selectedTime) || candidates[0] || null;
+}
+
+function getRosterSelectionFlights(flight) {
+  return [flight, findExpectedReturnFlight(flight)].filter(Boolean);
+}
+
+function addRosterFlightKey(key, nextKeys) {
+  if (!nextKeys.includes(key)) {
+    nextKeys.push(key);
+  }
+}
+
+function addRosterFlights(flight) {
+  const nextKeys = [...state.rosterFlightKeys];
+  getRosterSelectionFlights(flight).forEach((rosterFlight) => {
+    addRosterFlightKey(getRosterFlightKey(rosterFlight), nextKeys);
+  });
+  state.rosterFlightKeys = nextKeys;
+  saveRosterFlightKeys();
+}
+
+function removeRosterFlights(flight) {
+  const keysToRemove = new Set(getRosterSelectionFlights(flight).map(getRosterFlightKey));
+  state.rosterFlightKeys = state.rosterFlightKeys.filter((key) => !keysToRemove.has(key));
+  saveRosterFlightKeys();
+}
+
+function toggleRosterFlight(flight) {
+  if (isRosterFlight(flight)) {
+    removeRosterFlights(flight);
+  } else {
+    addRosterFlights(flight);
+  }
+
+  render();
+}
+
 function isFlightMarkedCompleted(flight) {
   const normalizedStatus = String(flight.status || "").toLowerCase();
   return /airborn|arriv|land|depart/.test(normalizedStatus);
 }
 
 function getCompletionDateTime(flight) {
-  return getActualDateTime(flight) || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight);
-}
+  const candidates = [
+    getActualDateTime(flight),
+    flight.revisedTime,
+    flight.scheduledTime,
+    getDateTimeFromFlightTime(flight)
+  ]
+    .map((dateTime) => ({ dateTime, time: getDateTimeMs(dateTime) }))
+    .filter(({ time }) => Number.isFinite(time));
 
-function hasMissingDisplayTime(flight) {
-  return !flight.time || flight.time === "--:--";
+  if (!candidates.length) {
+    return "";
+  }
+
+  return candidates.reduce((latest, candidate) => {
+    return candidate.time > latest.time ? candidate : latest;
+  }).dateTime;
 }
 
 function getDateTimeMs(dateTimeString) {
@@ -342,11 +444,6 @@ function shouldHideCompletedFlight(flight, selectedDate) {
   const completionDateTime = getCompletionDateTime(flight);
   if (!completionDateTime) {
     return false;
-  }
-
-  if (hasMissingDisplayTime(flight)) {
-    const completionTime = getDateTimeMs(completionDateTime);
-    return Number.isFinite(completionTime) && Date.now() >= completionTime;
   }
 
   if (!isFlightMarkedCompleted(flight) && !getActualDateTime(flight) && !getDateTimeFromFlightTime(flight)) {
@@ -441,9 +538,12 @@ function createFlightRow(flight) {
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
+  const rosterButton = (state.rosterSelectMode || state.showingRoster) && flight.isJet2
+    ? `<button class="roster-action ${isRosterFlight(flight) ? "is-selected" : ""}" type="button" aria-label="${isRosterFlight(flight) ? "Remove" : "Add"} ${flight.flightNumber} ${isRosterFlight(flight) ? "from" : "to"} roster">${isRosterFlight(flight) ? "-" : "+"}</button>`
+    : "";
   row.innerHTML = `
     <td data-label="Time">${timeCell}</td>
-    <td data-label="Flight">${flightCell}</td>
+    <td data-label="Flight"><span class="flight-cell-content">${rosterButton}${flightCell}</span></td>
     <td data-label="Airline">${getAirlineBadge(flight)}</td>
     <td data-label="${flight.type === "departures" ? "To" : "From"}">${routeCell}</td>
     <td data-label="Status"><span class="desktop-detail">${statusCell}</span></td>
@@ -464,6 +564,14 @@ function createFlightRow(flight) {
     });
   }
 
+  const rosterAction = row.querySelector(".roster-action");
+  if (rosterAction) {
+    rosterAction.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleRosterFlight(flight);
+    });
+  }
+
   return row;
 }
 
@@ -472,6 +580,15 @@ function createDetailItem(label, value) {
   item.className = "flight-detail-item";
   item.innerHTML = `<p class="flight-detail-label">${label}</p><p class="flight-detail-value">${value}</p>`;
   return item;
+}
+
+function createRosterRow(flight) {
+  const row = createFlightRow(flight);
+  const dateCell = document.createElement("td");
+  dateCell.dataset.label = "Date";
+  dateCell.innerHTML = `<span class="roster-date">${formatFriendlyDate(flight.date)}</span>`;
+  row.insertBefore(dateCell, row.firstChild);
+  return row;
 }
 
 function openFlightModal(flight) {
@@ -537,7 +654,7 @@ function fillTable(tbody, flights, emptyLabel) {
 
   if (!flights.length) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="4" class="empty-state">${emptyLabel}</td>`;
+    row.innerHTML = `<td colspan="7" class="empty-state">${emptyLabel}</td>`;
     tbody.appendChild(row);
     return;
   }
@@ -545,7 +662,49 @@ function fillTable(tbody, flights, emptyLabel) {
   flights.forEach((flight) => tbody.appendChild(createFlightRow(flight)));
 }
 
+function getRosterFlights() {
+  const rosterKeys = new Set(state.rosterFlightKeys);
+  const flights = state.dates.flatMap((dateString) => getFlightsForDate(dateString));
+  const byRosterKey = new Map(flights.map((flight) => [getRosterFlightKey(flight), flight]));
+
+  return [...rosterKeys]
+    .map((key) => byRosterKey.get(key))
+    .filter(Boolean)
+    .sort((left, right) => {
+      return getComparableFlightTime(left) - getComparableFlightTime(right);
+    });
+}
+
+function renderRosterResults() {
+  results.replaceChildren();
+  const rosterFlights = getRosterFlights();
+  const fragment = rosterTemplate.content.cloneNode(true);
+  const rosterBody = fragment.querySelector(".roster-body");
+
+  fragment.querySelector(".roster-pill").textContent = `${rosterFlights.length} sectors`;
+  fragment.querySelector(".roster-table-pill").textContent = `${rosterFlights.length} saved`;
+
+  rosterBody.replaceChildren();
+  if (!rosterFlights.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="7" class="empty-state">No flights saved to your roster yet.</td>`;
+    rosterBody.appendChild(row);
+  } else {
+    rosterFlights.forEach((flight) => rosterBody.appendChild(createRosterRow(flight)));
+  }
+
+  previousDayButton.disabled = true;
+  nextDayButton.disabled = true;
+  jumpTodayButton.disabled = false;
+  results.appendChild(fragment);
+}
+
 function renderResults() {
+  if (state.showingRoster) {
+    renderRosterResults();
+    return;
+  }
+
   const visibleFlights = getVisibleFlights();
   results.replaceChildren();
   const dateString = state.dates[state.selectedDateIndex];
@@ -606,12 +765,20 @@ function render() {
   const generatedAt = liveStatus === "live" ? state.liveGeneratedAtByDate[selectedDate] : state.staticGeneratedAt;
   const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
   const liveMessage = state.liveMessageByDate[selectedDate] || "";
-  statusText.textContent = state.jet2Only
-    ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}.`
-    : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}.`;
+  const rosterCount = getRosterFlights().length;
+
+  if (state.showingRoster) {
+    statusText.textContent = `Showing ${rosterCount} saved roster sectors.`;
+  } else {
+    statusText.textContent = state.jet2Only
+      ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}${state.rosterSelectMode ? ", roster select mode on" : ""}.`
+      : `Showing ${activeFlights.length} ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}${state.rosterSelectMode ? ", roster select mode on" : ""}.`;
+  }
 
   departuresToggle.classList.toggle("is-active", state.activeView === "departures");
   arrivalsToggle.classList.toggle("is-active", state.activeView === "arrivals");
+  rosterSelectToggle.classList.toggle("is-active", state.rosterSelectMode);
+  myRosterToggle.classList.toggle("is-active", state.showingRoster);
   showCompletedToggle.checked = state.showCompleted;
 
   sourceText.innerHTML = generatedAt
@@ -658,6 +825,7 @@ async function loadFlights() {
     state.airportCode = payload.airport.code;
     state.sourceBaseUrl = payload.source.baseUrl;
     state.staticSourceBaseUrl = payload.source.baseUrl;
+    state.rosterFlightKeys = loadRosterFlightKeys();
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
     render();
   } catch (error) {
@@ -754,20 +922,37 @@ showCompletedToggle.addEventListener("change", () => {
 
 departuresToggle.addEventListener("click", () => {
   state.activeView = "departures";
+  state.showingRoster = false;
   render();
 });
 
 arrivalsToggle.addEventListener("click", () => {
   state.activeView = "arrivals";
+  state.showingRoster = false;
+  render();
+});
+
+rosterSelectToggle.addEventListener("click", () => {
+  state.rosterSelectMode = !state.rosterSelectMode;
+  state.showingRoster = false;
+  state.jet2Only = state.rosterSelectMode ? true : state.jet2Only;
+  jet2Toggle.checked = state.jet2Only;
+  render();
+});
+
+myRosterToggle.addEventListener("click", () => {
+  state.showingRoster = !state.showingRoster;
   render();
 });
 
 previousDayButton.addEventListener("click", () => {
+  state.showingRoster = false;
   state.selectedDateIndex = Math.max(state.selectedDateIndex - 1, 0);
   render();
 });
 
 nextDayButton.addEventListener("click", () => {
+  state.showingRoster = false;
   state.selectedDateIndex = Math.min(state.selectedDateIndex + 1, state.dates.length - 1);
   render();
 });
@@ -775,6 +960,7 @@ nextDayButton.addEventListener("click", () => {
 jumpTodayButton.addEventListener("click", () => {
   const todayIndex = state.dates.indexOf(getTodayDateString());
   if (todayIndex >= 0) {
+    state.showingRoster = false;
     state.selectedDateIndex = todayIndex;
     render();
   }

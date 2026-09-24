@@ -25,6 +25,11 @@
             <button id="arrivalsToggle" class="view-toggle-button" type="button">Arrivals</button>
           </div>
 
+          <div class="roster-toggle" aria-label="Roster tools">
+            <button id="rosterSelectToggle" class="roster-toggle-button" type="button">Roster select</button>
+            <button id="myRosterToggle" class="roster-toggle-button" type="button">My roster</button>
+          </div>
+
           <label class="toggle">
             <input id="jet2Only" type="checkbox">
             <span>Jet2 only</span>
@@ -98,6 +103,43 @@
 	                  </tr>
                 </thead>
                 <tbody class="arrivals-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </article>
+    </template>
+
+    <template id="rosterTemplate">
+      <article class="day-card roster-card">
+        <div class="day-header">
+          <div>
+            <p class="day-label">Saved sectors</p>
+            <h2 class="day-date">My Roster</h2>
+          </div>
+          <span class="pill roster-pill"></span>
+        </div>
+
+        <div class="tables">
+          <section class="table-card roster-section">
+            <div class="table-header">
+              <h3>Roster</h3>
+              <span class="pill roster-table-pill"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Flight</th>
+                    <th>Airline</th>
+                    <th>Route</th>
+                    <th>Status</th>
+                    <th>Info</th>
+                  </tr>
+                </thead>
+                <tbody class="roster-body"></tbody>
               </table>
             </div>
           </section>

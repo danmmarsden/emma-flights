@@ -83,13 +83,15 @@ h1 {
 }
 
 .day-nav,
-.view-toggle {
+.view-toggle,
+.roster-toggle {
   display: inline-flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.view-toggle {
+.view-toggle,
+.roster-toggle {
   padding: 4px;
   border: 1px solid var(--line-strong);
   border-radius: 12px;
@@ -97,6 +99,7 @@ h1 {
 }
 
 .view-toggle-button,
+.roster-toggle-button,
 .nav-button,
 .refresh-button {
   appearance: none;
@@ -114,6 +117,7 @@ h1 {
 }
 
 .view-toggle-button.is-active,
+.roster-toggle-button.is-active,
 .refresh-button {
   background: linear-gradient(180deg, #3c2e16, #261e11);
   color: var(--accent);
@@ -122,6 +126,7 @@ h1 {
 }
 
 .view-toggle-button:hover,
+.roster-toggle-button:hover,
 .nav-button:hover,
 .refresh-button:hover {
   filter: brightness(1.08);
@@ -353,6 +358,36 @@ td:nth-child(6) {
   width: 14rem;
 }
 
+.roster-section th:nth-child(1),
+.roster-section td:nth-child(1) {
+  width: 12rem;
+}
+
+.roster-section th:nth-child(2),
+.roster-section td:nth-child(2) {
+  width: 10rem;
+}
+
+.roster-section th:nth-child(3),
+.roster-section td:nth-child(3) {
+  width: 11rem;
+}
+
+.roster-section th:nth-child(5),
+.roster-section td:nth-child(5) {
+  width: auto;
+}
+
+.roster-section th:nth-child(6),
+.roster-section td:nth-child(6) {
+  width: 13rem;
+}
+
+.roster-section th:nth-child(7),
+.roster-section td:nth-child(7) {
+  width: 14rem;
+}
+
 tbody tr:hover td {
   background:
     linear-gradient(180deg, rgba(255, 191, 71, 0.08) 0 49%, rgba(0, 0, 0, 0.24) 49% 51%, rgba(255, 191, 71, 0.04) 51% 100%),
@@ -385,11 +420,48 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+.flight-cell-content {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
 .flight-code-wrap {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.roster-action {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  background: rgba(255, 209, 102, 0.12);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--board-font);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.roster-action.is-selected {
+  color: var(--danger);
+  border-color: rgba(255, 107, 94, 0.34);
+  background: rgba(255, 107, 94, 0.12);
+}
+
+.roster-date {
+  color: var(--text);
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
 }
 
 .time-wrap {
@@ -670,6 +742,14 @@ tbody tr.has-details:focus-visible td {
       linear-gradient(180deg, #15191d, #101317);
   }
 
+  .roster-section tbody tr {
+    grid-template-columns: minmax(5.8rem, 0.8fr) minmax(8rem, 1.2fr) minmax(6rem, 0.7fr);
+    grid-template-areas:
+      "date date date"
+      "time flight route"
+      "airline airline airline";
+  }
+
   tbody tr:last-child {
     border-bottom: 0;
   }
@@ -728,10 +808,52 @@ tbody tr.has-details:focus-visible td {
     text-align: right;
   }
 
+  .roster-section td:nth-child(1) {
+    grid-area: date;
+    width: auto;
+    padding-bottom: 0;
+    text-align: left;
+  }
+
+  .roster-section td:nth-child(2) {
+    grid-area: time;
+    width: auto;
+  }
+
+  .roster-section td:nth-child(3) {
+    grid-area: flight;
+    width: auto;
+  }
+
+  .roster-section td:nth-child(4) {
+    grid-area: airline;
+    width: auto;
+    padding-top: 0;
+    text-align: left;
+  }
+
+  .roster-section td:nth-child(5) {
+    grid-area: route;
+    width: auto;
+    text-align: right;
+  }
+
   th:nth-child(5),
   th:nth-child(6),
   td:nth-child(5),
   td:nth-child(6) {
+    display: none;
+  }
+
+  .roster-section th:nth-child(5),
+  .roster-section td:nth-child(5) {
+    display: block;
+  }
+
+  .roster-section th:nth-child(6),
+  .roster-section th:nth-child(7),
+  .roster-section td:nth-child(6),
+  .roster-section td:nth-child(7) {
     display: none;
   }
 
@@ -766,11 +888,13 @@ tbody tr.has-details:focus-visible td {
   }
 
   .view-toggle,
-  .day-nav {
+  .day-nav,
+  .roster-toggle {
     width: 100%;
   }
 
   .view-toggle-button,
+  .roster-toggle-button,
   .nav-button,
   .refresh-button {
     flex: 1 1 0;
@@ -791,6 +915,7 @@ tbody tr.has-details:focus-visible td {
   }
 
   .view-toggle-button,
+  .roster-toggle-button,
   .nav-button,
   .refresh-button {
     padding: 10px 9px;
@@ -818,6 +943,13 @@ tbody tr.has-details:focus-visible td {
     min-height: 56px;
   }
 
+  .roster-section tbody tr {
+    grid-template-columns: 5.4rem minmax(4.8rem, 1fr) 3.4rem 3rem;
+    grid-template-areas:
+      "date date date date"
+      "time flight airline route";
+  }
+
   td {
     padding: 12px 7px;
     font-size: 0.94rem;
@@ -830,6 +962,15 @@ tbody tr.has-details:focus-visible td {
 
   td:nth-child(3) {
     padding-top: 10px;
+  }
+
+  .roster-section td:nth-child(1) {
+    padding-bottom: 0;
+  }
+
+  .roster-section td:nth-child(4) {
+    padding-top: 10px;
+    text-align: center;
   }
 
   .time-meta {
@@ -871,6 +1012,23 @@ tbody tr.has-details:focus-visible td {
   .flight-code-wrap {
     flex-wrap: nowrap;
     gap: 5px;
+  }
+
+  .flight-cell-content {
+    gap: 6px;
+  }
+
+  .roster-action {
+    width: 24px;
+    height: 24px;
+    font-size: 0.92rem;
+  }
+
+  .roster-date {
+    display: inline-block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
   }
 
   .details-icon,

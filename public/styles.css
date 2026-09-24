@@ -479,7 +479,7 @@ tbody tr.has-details:focus-visible td {
   background: transparent;
   color: inherit;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .empty-state {

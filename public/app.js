@@ -183,6 +183,22 @@ function getStatusBadge(flight) {
   return null;
 }
 
+function getAirlineShortcode(flight) {
+  const flightCode = String(flight.flightNumber || "").trim().toUpperCase();
+  const flightCodePrefix = flightCode.match(/^[A-Z]{3}(?=\d)/)?.[0] || flightCode.match(/^[A-Z0-9]{2}(?=\d)/)?.[0];
+
+  if (flightCodePrefix) {
+    return flightCodePrefix;
+  }
+
+  return String(flight.airline || "")
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 4)
+    .toUpperCase() || "N/A";
+}
+
 function getVisibleFlights() {
   const selectedDate = state.dates[state.selectedDateIndex];
   const liveFlights = state.liveFlightsByDate[selectedDate];
@@ -345,13 +361,14 @@ function createFlightRow(flight) {
     : `<span class="time-main">${flight.time}</span>`;
   const routeCode = flight.airportCode || airport?.iataCode || flight.route || "Not available";
   const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span></span>`;
+  const airlineShortcode = getAirlineShortcode(flight);
   const flightCell = detailsAvailable
     ? `<span class="flight-code-wrap"><span class="flight-code">${flight.flightNumber}</span><span class="details-icon" aria-hidden="true">✈</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}</span>`
     : `<span class="flight-code">${flight.flightNumber}</span>${statusBadge ? `<span class="status-badge is-${statusBadge.tone}">${statusBadge.label}</span>` : ""}`;
   row.innerHTML = `
     <td data-label="Time">${timeCell}</td>
     <td data-label="Flight">${flightCell}</td>
-    <td data-label="Airline"><span class="airline-badge">${flight.airline}</span></td>
+    <td data-label="Airline"><span class="airline-badge" title="${flight.airline}">${airlineShortcode}</span></td>
     <td data-label="${flight.type === "departures" ? "To" : "From"}">${routeCell}</td>
   `;
 

@@ -18,14 +18,9 @@ npm run generate:data
 
 This writes `public/data/flights.json` by scraping the public `flight.info` schedule pages starting from today and moving forward until several empty days are found.
 
-## GitHub Pages
+## Static hosting
 
-The repo includes:
-
-- a GitHub Actions workflow that regenerates `public/data/flights.json` every day
-- a GitHub Pages workflow that deploys the static files from `public/`
-
-Once GitHub Pages is enabled for the repository, the app can run directly from the Pages URL with no Node server.
+The app is served from the `public/` directory and can run on GitHub Pages or another static host with no Node server. Regenerate `public/data/flights.json` before deploying whenever the schedule needs refreshing.
 
 ## Live data feed
 
@@ -38,15 +33,15 @@ This is implemented as:
 
 ### Provider
 
-The live endpoint uses the official AeroDataBox airport FIDS endpoint:
+The live endpoint uses AeroDataBox through RapidAPI:
 
 - `GET /flights/airports/{codeType}/{code}/{fromLocal}/{toLocal}`
-- auth header: `x-magicapi-key`
+- auth headers: `X-RapidAPI-Key` and `X-RapidAPI-Host`
 
 ### Vercel setup
 
 1. Import this repository into Vercel
-2. Add an environment variable named `AERODATABOX_API_KEY`
+2. Add an environment variable named `AERODATABOX_RAPIDAPI_KEY`
 3. Deploy
 4. Copy the deployed Vercel base URL
 

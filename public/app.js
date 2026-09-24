@@ -413,6 +413,12 @@ function getComparableFlightTime(flight) {
   return Number.isFinite(time) ? time : 0;
 }
 
+function getNextDateString(dateString) {
+  const date = new Date(`${dateString}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function findExpectedReturnFlight(flight) {
   if (!flight.isJet2 || !flight.airportCode) {
     return null;
@@ -420,7 +426,9 @@ function findExpectedReturnFlight(flight) {
 
   const oppositeType = flight.type === "departures" ? "arrivals" : "departures";
   const selectedTime = getComparableFlightTime(flight);
-  const candidates = getFlightsForDate(flight.date)
+  const candidateDates = [flight.date, getNextDateString(flight.date)];
+  const candidates = candidateDates
+    .flatMap((dateString) => getFlightsForDate(dateString))
     .filter((candidate) => candidate.isJet2)
     .filter((candidate) => candidate.type === oppositeType)
     .filter((candidate) => candidate.airportCode === flight.airportCode)

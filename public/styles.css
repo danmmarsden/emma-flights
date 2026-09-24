@@ -71,14 +71,15 @@ h1 {
   text-transform: uppercase;
   color: var(--accent);
   text-shadow: 0 0 18px rgba(255, 191, 71, 0.16);
+  white-space: nowrap;
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .day-nav,
@@ -102,11 +103,11 @@ h1 {
   border: 1px solid var(--line-strong);
   background: linear-gradient(180deg, #252c34, #171c22);
   color: var(--text);
-  padding: 11px 14px;
+  padding: 10px 13px;
   border-radius: 10px;
   cursor: pointer;
   font-family: var(--board-font);
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -135,8 +136,8 @@ h1 {
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: linear-gradient(180deg, #252c34, #171c22);
@@ -149,8 +150,9 @@ h1 {
 
 .toggle input {
   accent-color: var(--accent);
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
+  margin: 0;
 }
 
 .meta-row {
@@ -164,7 +166,7 @@ h1 {
 .source-text {
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -754,11 +756,13 @@ tbody tr.has-details:focus-visible td {
   }
 
   h1 {
-    font-size: clamp(1.8rem, 11vw, 2.8rem);
+    font-size: clamp(1.45rem, 7.2vw, 2rem);
+    letter-spacing: 0.05em;
   }
 
   .controls {
-    gap: 10px;
+    gap: 8px;
+    margin-top: 16px;
   }
 
   .view-toggle,
@@ -774,8 +778,24 @@ tbody tr.has-details:focus-visible td {
   }
 
   .toggle {
-    width: 100%;
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
     justify-content: center;
+    padding: 8px 9px;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+  }
+
+  .refresh-button {
+    width: 100%;
+  }
+
+  .view-toggle-button,
+  .nav-button,
+  .refresh-button {
+    padding: 10px 9px;
+    font-size: 0.86rem;
+    letter-spacing: 0.06em;
   }
 
   .day-header,
@@ -800,7 +820,7 @@ tbody tr.has-details:focus-visible td {
 
   td {
     padding: 12px 7px;
-    font-size: 0.88rem;
+    font-size: 0.94rem;
     letter-spacing: 0.03em;
   }
 
@@ -813,7 +833,7 @@ tbody tr.has-details:focus-visible td {
   }
 
   .time-meta {
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     letter-spacing: 0.04em;
     white-space: nowrap;
     font-weight: 700;
@@ -825,7 +845,7 @@ tbody tr.has-details:focus-visible td {
   }
 
   .time-main {
-    font-size: 1.02rem;
+    font-size: 1.08rem;
   }
 
   .time-meta[data-mobile] {
@@ -834,7 +854,18 @@ tbody tr.has-details:focus-visible td {
 
   .time-meta[data-mobile]::after {
     content: attr(data-mobile);
-    font-size: 0.82rem;
+    font-size: 0.88rem;
+  }
+
+  .day-label,
+  .flight-detail-label {
+    font-size: 0.78rem;
+  }
+
+  .route-meta,
+  .source-text,
+  .status-text {
+    font-size: 0.86rem;
   }
 
   .flight-code-wrap {

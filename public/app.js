@@ -234,11 +234,24 @@ function mergeLiveFlights(staticFlights, liveFlights) {
 
 function isFlightMarkedCompleted(flight) {
   const normalizedStatus = String(flight.status || "").toLowerCase();
-  return /arriv|land|depart/.test(normalizedStatus);
+  return /airborn|arriv|land|depart/.test(normalizedStatus);
 }
 
 function getCompletionDateTime(flight) {
   return getActualDateTime(flight) || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight);
+}
+
+function hasMissingDisplayTime(flight) {
+  return !flight.time || flight.time === "--:--";
+}
+
+function getDateTimeMs(dateTimeString) {
+  if (!dateTimeString) {
+    return NaN;
+  }
+
+  const normalizedDateTime = String(dateTimeString).replace(" ", "T");
+  return new Date(normalizedDateTime).getTime();
 }
 
 function shouldHideCompletedFlight(flight, selectedDate) {
@@ -257,11 +270,16 @@ function shouldHideCompletedFlight(flight, selectedDate) {
     return false;
   }
 
+  if (hasMissingDisplayTime(flight)) {
+    const completionTime = getDateTimeMs(completionDateTime);
+    return Number.isFinite(completionTime) && Date.now() >= completionTime;
+  }
+
   if (!isFlightMarkedCompleted(flight) && !getActualDateTime(flight) && !getDateTimeFromFlightTime(flight)) {
     return false;
   }
 
-  const hideAfter = new Date(completionDateTime).getTime() + 30 * 60 * 1000;
+  const hideAfter = getDateTimeMs(completionDateTime) + 30 * 60 * 1000;
   return Date.now() >= hideAfter;
 }
 
@@ -415,7 +433,7 @@ function renderFlightModal() {
     ["Distance from LBA", formatDistance(airport?.distanceMiles || flight.routeDistanceMiles)],
     ["Elevation", Number.isFinite(airport?.elevationFt) ? `${airport.elevationFt.toLocaleString("en-GB")} ft` : "Not available"],
     ["Scheduled service", typeof airport?.scheduledService === "boolean" ? (airport.scheduledService ? "Yes" : "No") : "Not available"],
-    ["Source", flight.isLive ? "AeroDataBox live feed" : "flight.info schedule"]
+    ["Source", flight.isLive ? flight.liveSource || "Live airport board" : "flight.info schedule"]
   ].filter(([, value]) => value !== "Not available");
 
   flightModalEyebrow.textContent = flight.type === "departures" ? "Departure details" : "Arrival details";

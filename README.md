@@ -29,11 +29,11 @@ The app can optionally use a live feed for `today` while keeping the generated J
 This is implemented as:
 
 - `public/` on GitHub Pages for the static frontend
-- `api/live-flights.js` on Vercel as a small proxy to AeroDataBox
+- `api/live-flights.js` on Vercel as a small proxy to the Leeds Bradford Airport live board
 
 ### Provider
 
-The live endpoint uses AeroDataBox through RapidAPI:
+The live endpoint uses the Leeds Bradford Airport arrivals and departures board as the primary source. AeroDataBox through RapidAPI can still be configured as a fallback:
 
 - `GET /flights/airports/{codeType}/{code}/{fromLocal}/{toLocal}`
 - auth headers: `X-RapidAPI-Key` and `X-RapidAPI-Host`
@@ -41,7 +41,7 @@ The live endpoint uses AeroDataBox through RapidAPI:
 ### Vercel setup
 
 1. Import this repository into Vercel
-2. Add an environment variable named `AERODATABOX_RAPIDAPI_KEY`
+2. Optionally add an environment variable named `AERODATABOX_RAPIDAPI_KEY` for fallback live data
 3. Deploy
 4. Copy the deployed Vercel base URL
 

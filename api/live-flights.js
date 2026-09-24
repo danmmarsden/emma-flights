@@ -293,6 +293,18 @@ function normalizeLbaFlight(flight, type, selectedDate) {
   };
 }
 
+function dedupeAndSortFlights(flights, selectedDate) {
+  const byKey = new Map();
+
+  flights
+    .filter((flight) => flight.date === selectedDate)
+    .filter((flight) => flight.route)
+    .forEach((flight) => byKey.set(`${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`, flight));
+
+  return [...byKey.values()]
+    .sort((left, right) => `${left.time} ${left.type}`.localeCompare(`${right.time} ${right.type}`));
+}
+
 async function fetchAirportWindow(fromLocal, toLocal, apiKey) {
   const url = new URL(`${AERODATABOX_BASE_URL}/flights/airports/iata/${AIRPORT_CODE}/${fromLocal}/${toLocal}`);
   url.searchParams.set("withLeg", "true");
@@ -333,22 +345,21 @@ async function getLiveFlightsForDate(selectedDate, apiKey) {
   const arrivals = payload.arrivals || [];
   const lbaDepartures = lbaDeparturesResult.status === "fulfilled" ? lbaDeparturesResult.value : [];
   const lbaArrivals = lbaArrivalsResult.status === "fulfilled" ? lbaArrivalsResult.value : [];
+  const lbaFlights = dedupeAndSortFlights([
+    ...lbaDepartures.map((flight) => normalizeLbaFlight(flight, "departures", selectedDate)),
+    ...lbaArrivals.map((flight) => normalizeLbaFlight(flight, "arrivals", selectedDate))
+  ], selectedDate);
+
+  if (lbaFlights.length) {
+    return lbaFlights;
+  }
 
   const normalizedFlights = [
     ...departures.map((flight) => normalizeFlight(flight, "departures", selectedDate)),
-    ...arrivals.map((flight) => normalizeFlight(flight, "arrivals", selectedDate)),
-    ...lbaDepartures.map((flight) => normalizeLbaFlight(flight, "departures", selectedDate)),
-    ...lbaArrivals.map((flight) => normalizeLbaFlight(flight, "arrivals", selectedDate))
+    ...arrivals.map((flight) => normalizeFlight(flight, "arrivals", selectedDate))
   ];
 
-  const byKey = new Map();
-  normalizedFlights
-    .filter((flight) => flight.date === selectedDate)
-    .filter((flight) => flight.route)
-    .forEach((flight) => byKey.set(`${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`, flight));
-
-  return [...byKey.values()]
-    .sort((left, right) => `${left.time} ${left.type}`.localeCompare(`${right.time} ${right.type}`));
+  return dedupeAndSortFlights(normalizedFlights, selectedDate);
 }
 
 module.exports = async (req, res) => {

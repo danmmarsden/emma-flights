@@ -39,9 +39,6 @@ const departuresToggle = document.getElementById("departuresToggle");
 const arrivalsToggle = document.getElementById("arrivalsToggle");
 const rosterSelectToggle = document.getElementById("rosterSelectToggle");
 const myRosterToggle = document.getElementById("myRosterToggle");
-const previousDayButton = document.getElementById("previousDayButton");
-const nextDayButton = document.getElementById("nextDayButton");
-const jumpTodayButton = document.getElementById("jumpTodayButton");
 const results = document.getElementById("results");
 const statusText = document.getElementById("statusText");
 const sourceText = document.getElementById("sourceText");
@@ -85,6 +82,16 @@ function formatFriendlyDate(dateString) {
     month: "long",
     timeZone: "Europe/London"
   }).format(new Date(`${dateString}T12:00:00Z`));
+}
+
+function formatCompactDate(dateString) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "Europe/London"
+  }).formatToParts(new Date(`${dateString}T12:00:00Z`)).map((part) => [part.type, part.value]));
+  return `${parts.weekday} ${parts.day} ${parts.month.slice(0, 3)}`.toUpperCase();
 }
 
 function formatMonthLabel(monthKey) {
@@ -530,6 +537,27 @@ function shouldHideCompletedFlight(flight, selectedDate) {
   return Date.now() >= hideAfter;
 }
 
+function goToPreviousDay() {
+  state.showingRoster = false;
+  state.selectedDateIndex = Math.max(state.selectedDateIndex - 1, 0);
+  render();
+}
+
+function goToNextDay() {
+  state.showingRoster = false;
+  state.selectedDateIndex = Math.min(state.selectedDateIndex + 1, state.dates.length - 1);
+  render();
+}
+
+function jumpToToday() {
+  const todayIndex = state.dates.indexOf(getTodayDateString());
+  if (todayIndex >= 0) {
+    state.showingRoster = false;
+    state.selectedDateIndex = todayIndex;
+    render();
+  }
+}
+
 function getAirportForFlight(flight) {
   return flight.airport ||
     state.airports[flight.airportCode] ||
@@ -964,9 +992,6 @@ function renderRosterResults() {
   calendarSection.hidden = state.rosterView !== "calendar";
   renderRosterCalendar(fragment, rosterDepartureFlights);
 
-  previousDayButton.disabled = true;
-  nextDayButton.disabled = true;
-  jumpTodayButton.disabled = false;
   results.appendChild(fragment);
 }
 
@@ -981,9 +1006,6 @@ function renderResults() {
   const dateString = state.dates[state.selectedDateIndex];
 
   if (!dateString) {
-    previousDayButton.disabled = true;
-    nextDayButton.disabled = true;
-    jumpTodayButton.disabled = true;
     return;
   }
 
@@ -992,14 +1014,18 @@ function renderResults() {
   const fragment = dayTemplate.content.cloneNode(true);
   const departuresSection = fragment.querySelector(".departures-section");
   const arrivalsSection = fragment.querySelector(".arrivals-section");
+  const previousDayButton = fragment.querySelector(".previous-day-button");
+  const nextDayButton = fragment.querySelector(".next-day-button");
+  const todayButton = fragment.querySelector(".today-button");
 
   fragment.querySelector(".day-label").textContent = `Day ${state.selectedDateIndex + 1} of ${state.dates.length}`;
-  fragment.querySelector(".day-date").textContent = formatFriendlyDate(dateString);
-  fragment.querySelector(".total-pill").textContent = `${
-    state.activeView === "departures" ? departures.length : arrivals.length
-  } ${state.activeView}`;
-  fragment.querySelector(".departures-pill").textContent = `${departures.length} departures`;
-  fragment.querySelector(".arrivals-pill").textContent = `${arrivals.length} arrivals`;
+  fragment.querySelector(".day-date").textContent = formatCompactDate(dateString);
+  previousDayButton.disabled = state.selectedDateIndex === 0;
+  nextDayButton.disabled = state.selectedDateIndex >= state.dates.length - 1;
+  todayButton.disabled = !state.dates.includes(getTodayDateString());
+  previousDayButton.addEventListener("click", goToPreviousDay);
+  nextDayButton.addEventListener("click", goToNextDay);
+  todayButton.addEventListener("click", jumpToToday);
 
   fillTable(
     fragment.querySelector(".departures-body"),
@@ -1018,9 +1044,6 @@ function renderResults() {
     departuresSection.remove();
   }
 
-  previousDayButton.disabled = state.selectedDateIndex === 0;
-  nextDayButton.disabled = state.selectedDateIndex >= state.dates.length - 1;
-  jumpTodayButton.disabled = !state.dates.includes(getTodayDateString());
   results.appendChild(fragment);
 }
 
@@ -1072,9 +1095,6 @@ function getTodayDateString() {
 
 async function loadFlights() {
   statusText.textContent = "Loading flights...";
-  previousDayButton.disabled = true;
-  nextDayButton.disabled = true;
-  jumpTodayButton.disabled = true;
 
   try {
     const [response, airportsResponse] = await Promise.all([
@@ -1104,12 +1124,6 @@ async function loadFlights() {
     results.replaceChildren();
     statusText.textContent = `Could not load flights: ${error.message}`;
     sourceText.textContent = "";
-  } finally {
-    if (state.dates.length) {
-      previousDayButton.disabled = state.selectedDateIndex === 0;
-      nextDayButton.disabled = state.selectedDateIndex >= state.dates.length - 1;
-      jumpTodayButton.disabled = !state.dates.includes(getTodayDateString());
-    }
   }
 }
 
@@ -1217,27 +1231,6 @@ rosterSelectToggle.addEventListener("click", () => {
 myRosterToggle.addEventListener("click", () => {
   state.showingRoster = !state.showingRoster;
   render();
-});
-
-previousDayButton.addEventListener("click", () => {
-  state.showingRoster = false;
-  state.selectedDateIndex = Math.max(state.selectedDateIndex - 1, 0);
-  render();
-});
-
-nextDayButton.addEventListener("click", () => {
-  state.showingRoster = false;
-  state.selectedDateIndex = Math.min(state.selectedDateIndex + 1, state.dates.length - 1);
-  render();
-});
-
-jumpTodayButton.addEventListener("click", () => {
-  const todayIndex = state.dates.indexOf(getTodayDateString());
-  if (todayIndex >= 0) {
-    state.showingRoster = false;
-    state.selectedDateIndex = todayIndex;
-    render();
-  }
 });
 
 closeFlightModalButton.addEventListener("click", closeFlightModal);

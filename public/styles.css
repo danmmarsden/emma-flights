@@ -7,8 +7,8 @@
   --panel-soft: #1e242b;
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.16);
-  --text: #fff4dc;
-  --muted: #c9bfae;
+  --text: #fffaf0;
+  --muted: #e8dcc8;
   --accent: #ffd166;
   --accent-soft: rgba(255, 191, 71, 0.14);
   --danger: #ff6b5e;
@@ -82,7 +82,6 @@ h1 {
   margin-top: 18px;
 }
 
-.day-nav,
 .view-toggle,
 .roster-toggle {
   display: inline-flex;
@@ -100,8 +99,8 @@ h1 {
 
 .view-toggle-button,
 .roster-toggle-button,
-.nav-button,
-.refresh-button {
+.date-nav-button,
+.today-button {
   appearance: none;
   border: 1px solid var(--line-strong);
   background: linear-gradient(180deg, #252c34, #171c22);
@@ -117,8 +116,7 @@ h1 {
 }
 
 .view-toggle-button.is-active,
-.roster-toggle-button.is-active,
-.refresh-button {
+.roster-toggle-button.is-active {
   background: linear-gradient(180deg, #3c2e16, #261e11);
   color: var(--accent);
   border-color: rgba(255, 191, 71, 0.25);
@@ -127,13 +125,13 @@ h1 {
 
 .view-toggle-button:hover,
 .roster-toggle-button:hover,
-.nav-button:hover,
-.refresh-button:hover {
+.date-nav-button:hover,
+.today-button:hover {
   filter: brightness(1.08);
 }
 
-.nav-button:disabled,
-.refresh-button:disabled {
+.date-nav-button:disabled,
+.today-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -459,6 +457,36 @@ button.calendar-flight-summary {
   margin: 0;
 }
 
+.day-title {
+  min-width: 0;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.date-nav-button {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.today-button {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
 .day-label {
   color: var(--muted);
   text-transform: uppercase;
@@ -467,11 +495,12 @@ button.calendar-flight-summary {
 }
 
 .day-date {
-  margin-top: 8px;
+  min-width: 8.5rem;
   font-size: 1.45rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
+  text-align: center;
 }
 
 .pill {
@@ -1190,15 +1219,12 @@ tbody tr.has-details:focus-visible td {
   }
 
   .view-toggle,
-  .day-nav,
   .roster-toggle {
     width: 100%;
   }
 
   .view-toggle-button,
-  .roster-toggle-button,
-  .nav-button,
-  .refresh-button {
+  .roster-toggle-button {
     flex: 1 1 0;
     text-align: center;
   }
@@ -1212,19 +1238,36 @@ tbody tr.has-details:focus-visible td {
     letter-spacing: 0.05em;
   }
 
-  .refresh-button {
-    width: 100%;
-  }
-
   .view-toggle-button,
   .roster-toggle-button,
   .roster-view-button,
   .calendar-nav-button,
-  .nav-button,
-  .refresh-button {
+  .date-nav-button,
+  .today-button {
     padding: 10px 9px;
     font-size: 0.86rem;
     letter-spacing: 0.06em;
+  }
+
+  .date-nav {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .date-nav-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .day-date {
+    min-width: 7.5rem;
+    font-size: 1.2rem;
+  }
+
+  .today-button {
+    flex: 1 1 100%;
+    text-align: center;
   }
 
   .day-header,

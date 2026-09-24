@@ -15,11 +15,6 @@
         <h1>LBA Flight Tracker</h1>
 
         <div class="controls">
-          <div class="day-nav" aria-label="Day navigation">
-            <button id="previousDayButton" class="nav-button" type="button">Previous day</button>
-            <button id="nextDayButton" class="nav-button" type="button">Next day</button>
-          </div>
-
           <div class="view-toggle" aria-label="Flight type toggle">
             <button id="departuresToggle" class="view-toggle-button is-active" type="button">Departures</button>
             <button id="arrivalsToggle" class="view-toggle-button" type="button">Arrivals</button>
@@ -39,8 +34,6 @@
             <input id="showCompleted" type="checkbox">
             <span>Show completed</span>
           </label>
-
-          <button id="jumpTodayButton" class="refresh-button" type="button">Jump to today</button>
         </div>
 
         <div class="meta-row">
@@ -55,18 +48,21 @@
     <template id="dayTemplate">
       <article class="day-card">
         <div class="day-header">
-          <div>
+          <div class="day-title">
             <p class="day-label"></p>
-            <h2 class="day-date"></h2>
+            <div class="date-nav" aria-label="Day navigation">
+              <button class="date-nav-button previous-day-button" type="button" aria-label="Previous day">&lt;</button>
+              <h2 class="day-date"></h2>
+              <button class="date-nav-button next-day-button" type="button" aria-label="Next day">&gt;</button>
+              <button class="today-button" type="button">Today →</button>
+            </div>
           </div>
-          <span class="pill total-pill"></span>
         </div>
 
         <div class="tables">
           <section class="table-card departures-section">
             <div class="table-header">
               <h3>Departures</h3>
-              <span class="pill departures-pill"></span>
             </div>
             <div class="table-wrap">
               <table>
@@ -88,7 +84,6 @@
           <section class="table-card arrivals-section">
             <div class="table-header">
               <h3>Arrivals</h3>
-              <span class="pill arrivals-pill"></span>
             </div>
             <div class="table-wrap">
               <table>

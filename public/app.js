@@ -25,11 +25,13 @@ const state = {
   rosterCalendarMonth: "",
   rosterStatusPickerDate: "",
   rosterStatusesByDate: {},
+  rosterFlightSnapshotsByKey: {},
   rosterFlightKeys: []
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
 const ROSTER_STORAGE_KEY = "lba-flight-tracker-roster";
+const ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY = "lba-flight-tracker-roster-flight-snapshots";
 const ROSTER_STATUS_STORAGE_KEY = "lba-flight-tracker-roster-statuses";
 const ROSTER_STATUS_OPTIONS = ["RDO", "SBY", "ASB"];
 
@@ -333,6 +335,32 @@ function saveRosterFlightKeys() {
   window.localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(state.rosterFlightKeys));
 }
 
+function loadRosterFlightSnapshots() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY) || "{}");
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(saved).filter(([key, flight]) => {
+        return typeof key === "string" &&
+          flight &&
+          typeof flight === "object" &&
+          typeof flight.date === "string" &&
+          typeof flight.type === "string" &&
+          typeof flight.flightNumber === "string";
+      })
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveRosterFlightSnapshots() {
+  window.localStorage.setItem(ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY, JSON.stringify(state.rosterFlightSnapshotsByKey));
+}
+
 function loadRosterStatuses() {
   try {
     const saved = JSON.parse(window.localStorage.getItem(ROSTER_STATUS_STORAGE_KEY) || "{}");
@@ -457,17 +485,28 @@ function addRosterFlightKey(key, nextKeys) {
 
 function addRosterFlights(flight) {
   const nextKeys = [...state.rosterFlightKeys];
+  const nextSnapshots = { ...state.rosterFlightSnapshotsByKey };
   getRosterSelectionFlights(flight).forEach((rosterFlight) => {
-    addRosterFlightKey(getRosterFlightKey(rosterFlight), nextKeys);
+    const rosterFlightKey = getRosterFlightKey(rosterFlight);
+    addRosterFlightKey(rosterFlightKey, nextKeys);
+    nextSnapshots[rosterFlightKey] = rosterFlight;
   });
   state.rosterFlightKeys = nextKeys;
+  state.rosterFlightSnapshotsByKey = nextSnapshots;
   saveRosterFlightKeys();
+  saveRosterFlightSnapshots();
 }
 
 function removeRosterFlights(flight) {
   const keysToRemove = new Set(getRosterSelectionFlights(flight).map(getRosterFlightKey));
+  const nextSnapshots = { ...state.rosterFlightSnapshotsByKey };
+  keysToRemove.forEach((key) => {
+    delete nextSnapshots[key];
+  });
   state.rosterFlightKeys = state.rosterFlightKeys.filter((key) => !keysToRemove.has(key));
+  state.rosterFlightSnapshotsByKey = nextSnapshots;
   saveRosterFlightKeys();
+  saveRosterFlightSnapshots();
 }
 
 function toggleRosterFlight(flight) {
@@ -772,7 +811,7 @@ function getRosterFlights() {
   const byRosterKey = new Map(flights.map((flight) => [getRosterFlightKey(flight), flight]));
 
   return [...rosterKeys]
-    .map((key) => byRosterKey.get(key))
+    .map((key) => byRosterKey.get(key) || state.rosterFlightSnapshotsByKey[key])
     .filter(Boolean)
     .sort((left, right) => {
       return getComparableFlightTime(left) - getComparableFlightTime(right);
@@ -1117,6 +1156,7 @@ async function loadFlights() {
     state.sourceBaseUrl = payload.source.baseUrl;
     state.staticSourceBaseUrl = payload.source.baseUrl;
     state.rosterFlightKeys = loadRosterFlightKeys();
+    state.rosterFlightSnapshotsByKey = loadRosterFlightSnapshots();
     state.rosterStatusesByDate = loadRosterStatuses();
     state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
     render();

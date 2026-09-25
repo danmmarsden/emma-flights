@@ -1179,12 +1179,27 @@ async function ensureStaticFlightsForDates(dateStrings) {
   await Promise.all([...new Set(dateStrings.filter(Boolean))].map(ensureStaticFlightsForDate));
 }
 
+async function discoverAvailableSplitDates(startDate, daysAhead = 45) {
+  const dates = [];
+  let dateString = startDate;
+
+  for (let offset = 0; offset < daysAhead; offset += 1) {
+    await ensureStaticFlightsForDate(dateString);
+    if ((state.staticFlightsByDate[dateString] || []).length) {
+      dates.push(dateString);
+    }
+    dateString = getNextDateString(dateString);
+  }
+
+  return dates;
+}
+
 async function loadFlights() {
   statusText.textContent = "Loading flights...";
 
   try {
     const [response, airportsResponse] = await Promise.all([
-      fetch(getDataUrl()),
+      fetch(getDataUrl(), { cache: "no-cache" }),
       fetch(getAirportsUrl()).catch(() => null)
     ]);
     const payload = await response.json();
@@ -1205,7 +1220,10 @@ async function loadFlights() {
     state.airports = airportsPayload.airports || payload.airports || {};
     const manifestDates = Array.isArray(payload.dates) ? payload.dates : [];
     const fallbackDate = getTodayDateString();
-    state.dates = manifestDates.length ? manifestDates : [fallbackDate];
+    state.dates = manifestDates.length ? manifestDates : await discoverAvailableSplitDates(fallbackDate);
+    if (!state.dates.length) {
+      state.dates = [fallbackDate];
+    }
     state.generatedAt = payload.generatedAt;
     state.staticGeneratedAt = payload.generatedAt;
     state.airportCode = payload.airport.code;

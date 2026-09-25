@@ -261,6 +261,58 @@ h1 {
   text-transform: uppercase;
 }
 
+.roster-import-form {
+  display: grid;
+  grid-template-columns: auto minmax(14rem, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.roster-import-label,
+.roster-import-status {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roster-import-input {
+  min-width: 0;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  border-radius: 8px;
+  background: rgba(9, 11, 13, 0.42);
+  color: var(--text);
+  font-family: var(--board-font);
+  font-size: 0.86rem;
+  padding: 10px 12px;
+}
+
+.roster-import-input::placeholder {
+  color: rgba(232, 220, 200, 0.52);
+}
+
+.roster-import-button {
+  appearance: none;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 8px;
+  background: rgba(125, 211, 252, 0.14);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--board-font);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 10px 12px;
+  text-transform: uppercase;
+}
+
+.roster-import-status {
+  grid-column: 2 / 4;
+  min-height: 1rem;
+}
+
 .roster-view-controls,
 .calendar-nav {
   display: inline-flex;
@@ -1250,6 +1302,14 @@ tbody tr.has-details:focus-visible td {
     padding: 8px 9px;
     font-size: 0.78rem;
     letter-spacing: 0.05em;
+  }
+
+  .roster-import-form {
+    grid-template-columns: 1fr;
+  }
+
+  .roster-import-status {
+    grid-column: auto;
   }
 
   .view-toggle-button,

@@ -2,6 +2,7 @@ const state = {
   flights: [],
   staticFlightsByDate: {},
   staticFlightLoadsByDate: {},
+  staticLoadErrorsByDate: {},
   airports: {},
   dates: [],
   generatedAt: "",
@@ -1109,9 +1110,12 @@ function render() {
   const activeFlights = visibleFlights.filter((flight) => flight.type === state.activeView);
   const liveMessage = state.liveMessageByDate[selectedDate] || "";
   const rosterCount = getRosterFlights().length;
+  const staticLoadError = state.staticLoadErrorsByDate[selectedDate];
 
   if (state.showingRoster) {
     statusText.textContent = `Showing ${rosterCount} saved roster sectors.`;
+  } else if (staticLoadError) {
+    statusText.textContent = `${staticLoadError}. The split schedule file may not be published yet.`;
   } else {
     statusText.textContent = state.jet2Only
       ? `Showing ${activeFlights.length} Jet2 ${state.activeView} for ${selectedDate} from ${state.airportCode}${state.showCompleted ? ", including completed flights" : ""}${state.rosterSelectMode ? ", roster select mode on" : ""}.`
@@ -1158,9 +1162,11 @@ async function ensureStaticFlightsForDate(dateString) {
       }
       const payload = await response.json();
       state.staticFlightsByDate[dateString] = Array.isArray(payload.flights) ? payload.flights : [];
+      delete state.staticLoadErrorsByDate[dateString];
     })
-    .catch(() => {
+    .catch((error) => {
       state.staticFlightsByDate[dateString] = [];
+      state.staticLoadErrorsByDate[dateString] = error.message;
     })
     .finally(() => {
       delete state.staticFlightLoadsByDate[dateString];
@@ -1197,7 +1203,9 @@ async function loadFlights() {
       return flightsByDate;
     }, {});
     state.airports = airportsPayload.airports || payload.airports || {};
-    state.dates = payload.dates;
+    const manifestDates = Array.isArray(payload.dates) ? payload.dates : [];
+    const fallbackDate = getTodayDateString();
+    state.dates = manifestDates.length ? manifestDates : [fallbackDate];
     state.generatedAt = payload.generatedAt;
     state.staticGeneratedAt = payload.generatedAt;
     state.airportCode = payload.airport.code;
@@ -1206,7 +1214,7 @@ async function loadFlights() {
     state.rosterFlightKeys = loadRosterFlightKeys();
     state.rosterFlightSnapshotsByKey = loadRosterFlightSnapshots();
     state.rosterStatusesByDate = loadRosterStatuses();
-    state.selectedDateIndex = Math.max(payload.dates.indexOf(getTodayDateString()), 0);
+    state.selectedDateIndex = Math.max(state.dates.indexOf(fallbackDate), 0);
     await ensureStaticFlightsForDates([
       state.dates[state.selectedDateIndex],
       ...getRosterDatesFromKeys()

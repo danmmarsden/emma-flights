@@ -357,6 +357,10 @@ async function generateDataset() {
 
 async function main() {
   const payload = await generateDataset();
+  if (!payload.dates.length || !payload.flights.length) {
+    throw new Error("Generated dataset is empty; keeping existing schedule files instead of overwriting them.");
+  }
+
   const flightsByDate = new Map(payload.dates.map((date) => [date, []]));
   payload.flights.forEach((flight) => {
     if (!flightsByDate.has(flight.date)) {

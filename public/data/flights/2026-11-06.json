@@ -1,6 +1,6 @@
 {
   "date": "2026-11-06",
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -149,7 +149,7 @@
     {
       "type": "arrivals",
       "date": "2026-11-06",
-      "time": "06:50",
+      "time": "06:45",
       "airline": "Aer Lingus",
       "flightNumber": "EI3670",
       "airportName": "Belfast",

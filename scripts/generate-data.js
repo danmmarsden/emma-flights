@@ -377,6 +377,16 @@ async function main() {
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
   await fs.mkdir(FLIGHTS_BY_DATE_OUTPUT_DIR, { recursive: true });
+  const expectedSplitFiles = new Set([...flightsByDate.keys()].map((date) => `${date}.json`));
+  const existingSplitFiles = await fs.readdir(FLIGHTS_BY_DATE_OUTPUT_DIR).catch((error) => {
+    if (error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  });
+  await Promise.all(existingSplitFiles
+    .filter((fileName) => fileName.endsWith(".json") && !expectedSplitFiles.has(fileName))
+    .map((fileName) => fs.unlink(path.join(FLIGHTS_BY_DATE_OUTPUT_DIR, fileName))));
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   await Promise.all([...flightsByDate.entries()].map(([date, flights]) => {
     return fs.writeFile(path.join(FLIGHTS_BY_DATE_OUTPUT_DIR, `${date}.json`), `${JSON.stringify({

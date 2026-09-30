@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "OurAirports",
     "baseUrl": "https://ourairports.com/data/"
@@ -518,25 +518,6 @@
       "wikipediaLink": "https://en.wikipedia.org/wiki/Fuerteventura_Airport",
       "distanceMiles": 1861
     },
-    "GCI": {
-      "ident": "EGJB",
-      "type": "medium_airport",
-      "name": "Guernsey Airport",
-      "latitude": 49.435001,
-      "longitude": -2.60197,
-      "elevationFt": 336,
-      "continent": "EU",
-      "countryCode": "GG",
-      "countryName": "Guernsey",
-      "regionCode": "GG-G",
-      "municipality": "Saint Peter Port",
-      "scheduledService": true,
-      "icaoCode": "EGJB",
-      "iataCode": "GCI",
-      "homeLink": "",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Guernsey_Airport",
-      "distanceMiles": 309
-    },
     "GDN": {
       "ident": "EPGD",
       "type": "large_airport",
@@ -936,25 +917,6 @@
       "wikipediaLink": "https://en.wikipedia.org/wiki/Paphos_International_Airport",
       "distanceMiles": 2111
     },
-    "PGF": {
-      "ident": "LFMP",
-      "type": "medium_airport",
-      "name": "Perpignan-Rivesaltes (Llabanère) Airport",
-      "latitude": 42.740398,
-      "longitude": 2.87067,
-      "elevationFt": 144,
-      "continent": "EU",
-      "countryCode": "FR",
-      "countryName": "France",
-      "regionCode": "FR-OCC",
-      "municipality": "Perpignan/Rivesaltes",
-      "scheduledService": true,
-      "icaoCode": "LFMP",
-      "iataCode": "PGF",
-      "homeLink": "https://www.aeroport-perpignan.com/",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Perpignan_-_Rivesaltes_Airport",
-      "distanceMiles": 796
-    },
     "PMI": {
       "ident": "LEPA",
       "type": "large_airport",
@@ -1163,6 +1125,25 @@
       "homeLink": "https://www.aena.es/en/tenerife-sur.html",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Tenerife%E2%80%93South_Airport",
       "distanceMiles": 1937
+    },
+    "VIE": {
+      "ident": "LOWW",
+      "type": "large_airport",
+      "name": "Vienna International Airport",
+      "latitude": 48.110298,
+      "longitude": 16.5697,
+      "elevationFt": 600,
+      "continent": "EU",
+      "countryCode": "AT",
+      "countryName": "Austria",
+      "regionCode": "AT-9",
+      "municipality": "Vienna",
+      "scheduledService": true,
+      "icaoCode": "LOWW",
+      "iataCode": "VIE",
+      "homeLink": "http://www.viennaairport.com/en/",
+      "wikipediaLink": "https://en.wikipedia.org/wiki/Vienna_International_Airport",
+      "distanceMiles": 884
     },
     "VRN": {
       "ident": "LIPX",

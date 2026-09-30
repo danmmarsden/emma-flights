@@ -1,6 +1,6 @@
 {
   "date": "2026-10-16",
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -450,26 +450,6 @@
       "type": "departures",
       "date": "2026-10-16",
       "time": "08:30",
-      "airline": "Jet2",
-      "flightNumber": "LS271",
-      "airportName": "Alicante",
-      "airportCode": "ALC",
-      "route": "Alicante (ALC)",
-      "isJet2": true,
-      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-16/00:00",
-      "airportFullName": "Alicante-Elche Miguel Hernández Airport",
-      "airportCountryCode": "ES",
-      "airportCountryName": "Spain",
-      "airportMunicipality": "Alicante",
-      "airportIcaoCode": "LEAL",
-      "airportLatitude": 38.2822,
-      "airportLongitude": -0.558156,
-      "routeDistanceMiles": 1078
-    },
-    {
-      "type": "departures",
-      "date": "2026-10-16",
-      "time": "08:30",
       "airline": "Aer Lingus",
       "flightNumber": "EI3671",
       "airportName": "Belfast",
@@ -485,6 +465,26 @@
       "airportLatitude": 54.618099,
       "airportLongitude": -5.8725,
       "routeDistanceMiles": 178
+    },
+    {
+      "type": "departures",
+      "date": "2026-10-16",
+      "time": "08:30",
+      "airline": "Jet2",
+      "flightNumber": "LS271",
+      "airportName": "Alicante",
+      "airportCode": "ALC",
+      "route": "Alicante (ALC)",
+      "isJet2": true,
+      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-16/00:00",
+      "airportFullName": "Alicante-Elche Miguel Hernández Airport",
+      "airportCountryCode": "ES",
+      "airportCountryName": "Spain",
+      "airportMunicipality": "Alicante",
+      "airportIcaoCode": "LEAL",
+      "airportLatitude": 38.2822,
+      "airportLongitude": -0.558156,
+      "routeDistanceMiles": 1078
     },
     {
       "type": "departures",

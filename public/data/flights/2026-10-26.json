@@ -1,6 +1,6 @@
 {
   "date": "2026-10-26",
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -207,6 +207,26 @@
       "routeDistanceMiles": 191
     },
     {
+      "type": "arrivals",
+      "date": "2026-10-26",
+      "time": "06:45",
+      "airline": "Aer Lingus",
+      "flightNumber": "EI3670",
+      "airportName": "Belfast",
+      "airportCode": "BHD",
+      "route": "Belfast (BHD)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-26/00:00",
+      "airportFullName": "George Best Belfast City Airport",
+      "airportCountryCode": "GB",
+      "airportCountryName": "United Kingdom",
+      "airportMunicipality": "Belfast",
+      "airportIcaoCode": "EGAC",
+      "airportLatitude": 54.618099,
+      "airportLongitude": -5.8725,
+      "routeDistanceMiles": 178
+    },
+    {
       "type": "departures",
       "date": "2026-10-26",
       "time": "06:45",
@@ -245,26 +265,6 @@
       "airportLatitude": 39.551701,
       "airportLongitude": 2.73881,
       "routeDistanceMiles": 1010
-    },
-    {
-      "type": "arrivals",
-      "date": "2026-10-26",
-      "time": "06:50",
-      "airline": "Aer Lingus",
-      "flightNumber": "EI3670",
-      "airportName": "Belfast",
-      "airportCode": "BHD",
-      "route": "Belfast (BHD)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-26/00:00",
-      "airportFullName": "George Best Belfast City Airport",
-      "airportCountryCode": "GB",
-      "airportCountryName": "United Kingdom",
-      "airportMunicipality": "Belfast",
-      "airportIcaoCode": "EGAC",
-      "airportLatitude": 54.618099,
-      "airportLongitude": -5.8725,
-      "routeDistanceMiles": 178
     },
     {
       "type": "departures",
@@ -489,7 +489,7 @@
     {
       "type": "arrivals",
       "date": "2026-10-26",
-      "time": "09:15",
+      "time": "09:20",
       "airline": "easyJet",
       "flightNumber": "U249",
       "airportName": "Belfast",
@@ -629,7 +629,7 @@
     {
       "type": "departures",
       "date": "2026-10-26",
-      "time": "10:45",
+      "time": "10:50",
       "airline": "easyJet",
       "flightNumber": "U250",
       "airportName": "Belfast",

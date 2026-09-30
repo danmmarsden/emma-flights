@@ -1,6 +1,6 @@
 {
   "date": "2026-10-17",
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -1391,26 +1391,6 @@
       "date": "2026-10-17",
       "time": "16:55",
       "airline": "Jet2",
-      "flightNumber": "LS217",
-      "airportName": "Lanzarote",
-      "airportCode": "ACE",
-      "route": "Lanzarote (ACE)",
-      "isJet2": true,
-      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-17/00:00",
-      "airportFullName": "César Manrique-Lanzarote Airport",
-      "airportCountryCode": "ES",
-      "airportCountryName": "Spain",
-      "airportMunicipality": "San Bartolomé",
-      "airportIcaoCode": "GCRR",
-      "airportLatitude": 28.945499,
-      "airportLongitude": -13.6052,
-      "routeDistanceMiles": 1824
-    },
-    {
-      "type": "departures",
-      "date": "2026-10-17",
-      "time": "16:55",
-      "airline": "Jet2",
       "flightNumber": "LS477",
       "airportName": "Las Palmas",
       "airportCode": "LPA",
@@ -1425,6 +1405,26 @@
       "airportLatitude": 27.9319,
       "airportLongitude": -15.3866,
       "routeDistanceMiles": 1922
+    },
+    {
+      "type": "departures",
+      "date": "2026-10-17",
+      "time": "16:55",
+      "airline": "Jet2",
+      "flightNumber": "LS217",
+      "airportName": "Lanzarote",
+      "airportCode": "ACE",
+      "route": "Lanzarote (ACE)",
+      "isJet2": true,
+      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-17/00:00",
+      "airportFullName": "César Manrique-Lanzarote Airport",
+      "airportCountryCode": "ES",
+      "airportCountryName": "Spain",
+      "airportMunicipality": "San Bartolomé",
+      "airportIcaoCode": "GCRR",
+      "airportLatitude": 28.945499,
+      "airportLongitude": -13.6052,
+      "routeDistanceMiles": 1824
     },
     {
       "type": "arrivals",

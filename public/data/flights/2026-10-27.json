@@ -1,6 +1,6 @@
 {
   "date": "2026-10-27",
-  "generatedAt": "2026-09-24T14:42:51.829Z",
+  "generatedAt": "2026-09-30T12:53:54.229Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -49,7 +49,7 @@
     {
       "type": "arrivals",
       "date": "2026-10-27",
-      "time": "06:00",
+      "time": "05:55",
       "airline": "Ryanair",
       "flightNumber": "FR457",
       "airportName": "Dublin",
@@ -167,6 +167,26 @@
       "routeDistanceMiles": 191
     },
     {
+      "type": "arrivals",
+      "date": "2026-10-27",
+      "time": "06:45",
+      "airline": "Aer Lingus",
+      "flightNumber": "EI3670",
+      "airportName": "Belfast",
+      "airportCode": "BHD",
+      "route": "Belfast (BHD)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-27/00:00",
+      "airportFullName": "George Best Belfast City Airport",
+      "airportCountryCode": "GB",
+      "airportCountryName": "United Kingdom",
+      "airportMunicipality": "Belfast",
+      "airportIcaoCode": "EGAC",
+      "airportLatitude": 54.618099,
+      "airportLongitude": -5.8725,
+      "routeDistanceMiles": 178
+    },
+    {
       "type": "departures",
       "date": "2026-10-27",
       "time": "06:45",
@@ -185,26 +205,6 @@
       "airportLatitude": 28.4527,
       "airportLongitude": -13.8638,
       "routeDistanceMiles": 1861
-    },
-    {
-      "type": "arrivals",
-      "date": "2026-10-27",
-      "time": "06:50",
-      "airline": "Aer Lingus",
-      "flightNumber": "EI3670",
-      "airportName": "Belfast",
-      "airportCode": "BHD",
-      "route": "Belfast (BHD)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-27/00:00",
-      "airportFullName": "George Best Belfast City Airport",
-      "airportCountryCode": "GB",
-      "airportCountryName": "United Kingdom",
-      "airportMunicipality": "Belfast",
-      "airportIcaoCode": "EGAC",
-      "airportLatitude": 54.618099,
-      "airportLongitude": -5.8725,
-      "routeDistanceMiles": 178
     },
     {
       "type": "departures",
@@ -449,26 +449,6 @@
     {
       "type": "departures",
       "date": "2026-10-27",
-      "time": "08:05",
-      "airline": "Ryanair",
-      "flightNumber": "FR2048",
-      "airportName": "Lanzarote",
-      "airportCode": "ACE",
-      "route": "Lanzarote (ACE)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-27/00:00",
-      "airportFullName": "César Manrique-Lanzarote Airport",
-      "airportCountryCode": "ES",
-      "airportCountryName": "Spain",
-      "airportMunicipality": "San Bartolomé",
-      "airportIcaoCode": "GCRR",
-      "airportLatitude": 28.945499,
-      "airportLongitude": -13.6052,
-      "routeDistanceMiles": 1824
-    },
-    {
-      "type": "departures",
-      "date": "2026-10-27",
       "time": "08:15",
       "airline": "Jet2",
       "flightNumber": "LS413",
@@ -485,6 +465,26 @@
       "airportLatitude": 36.7131,
       "airportLongitude": 28.7925,
       "routeDistanceMiles": 1872
+    },
+    {
+      "type": "departures",
+      "date": "2026-10-27",
+      "time": "08:20",
+      "airline": "Ryanair",
+      "flightNumber": "FR2048",
+      "airportName": "Lanzarote",
+      "airportCode": "ACE",
+      "route": "Lanzarote (ACE)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-27/00:00",
+      "airportFullName": "César Manrique-Lanzarote Airport",
+      "airportCountryCode": "ES",
+      "airportCountryName": "Spain",
+      "airportMunicipality": "San Bartolomé",
+      "airportIcaoCode": "GCRR",
+      "airportLatitude": 28.945499,
+      "airportLongitude": -13.6052,
+      "routeDistanceMiles": 1824
     },
     {
       "type": "arrivals",
@@ -869,7 +869,7 @@
     {
       "type": "arrivals",
       "date": "2026-10-27",
-      "time": "11:45",
+      "time": "11:50",
       "airline": "Jet2",
       "flightNumber": "LS272",
       "airportName": "Alicante",
@@ -967,26 +967,6 @@
       "routeDistanceMiles": 1467
     },
     {
-      "type": "arrivals",
-      "date": "2026-10-27",
-      "time": "13:00",
-      "airline": "Ryanair",
-      "flightNumber": "FR2047",
-      "airportName": "Lanzarote",
-      "airportCode": "ACE",
-      "route": "Lanzarote (ACE)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-27/00:00",
-      "airportFullName": "César Manrique-Lanzarote Airport",
-      "airportCountryCode": "ES",
-      "airportCountryName": "Spain",
-      "airportMunicipality": "San Bartolomé",
-      "airportIcaoCode": "GCRR",
-      "airportLatitude": 28.945499,
-      "airportLongitude": -13.6052,
-      "routeDistanceMiles": 1824
-    },
-    {
       "type": "departures",
       "date": "2026-10-27",
       "time": "13:05",
@@ -1005,6 +985,26 @@
       "airportLatitude": 36.6749,
       "airportLongitude": -4.49911,
       "routeDistanceMiles": 1196
+    },
+    {
+      "type": "arrivals",
+      "date": "2026-10-27",
+      "time": "13:20",
+      "airline": "Ryanair",
+      "flightNumber": "FR2047",
+      "airportName": "Lanzarote",
+      "airportCode": "ACE",
+      "route": "Lanzarote (ACE)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/arrivals/2026-10-27/00:00",
+      "airportFullName": "César Manrique-Lanzarote Airport",
+      "airportCountryCode": "ES",
+      "airportCountryName": "Spain",
+      "airportMunicipality": "San Bartolomé",
+      "airportIcaoCode": "GCRR",
+      "airportLatitude": 28.945499,
+      "airportLongitude": -13.6052,
+      "routeDistanceMiles": 1824
     },
     {
       "type": "arrivals",

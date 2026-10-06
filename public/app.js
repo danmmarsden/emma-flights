@@ -30,6 +30,7 @@ const state = {
   rosterStatusPickerDate: "",
   rosterStatusesByDate: {},
   rosterFlightSnapshotsByKey: {},
+  rosterImportMessage: "",
   rosterFlightKeys: []
 };
 
@@ -370,6 +371,22 @@ function saveRosterFlightSnapshots() {
   window.localStorage.setItem(ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY, JSON.stringify(state.rosterFlightSnapshotsByKey));
 }
 
+function saveRosterFlightsFromImport(flights) {
+  const nextKeys = [...state.rosterFlightKeys];
+  const nextSnapshots = { ...state.rosterFlightSnapshotsByKey };
+
+  flights.forEach((flight) => {
+    const key = getRosterFlightKey(flight);
+    addRosterFlightKey(key, nextKeys);
+    nextSnapshots[key] = flight;
+  });
+
+  state.rosterFlightKeys = nextKeys;
+  state.rosterFlightSnapshotsByKey = nextSnapshots;
+  saveRosterFlightKeys();
+  saveRosterFlightSnapshots();
+}
+
 function loadRosterStatuses() {
   try {
     const saved = JSON.parse(window.localStorage.getItem(ROSTER_STATUS_STORAGE_KEY) || "{}");
@@ -407,6 +424,14 @@ function removeRosterStatus(dateString) {
   state.rosterStatusPickerDate = "";
   saveRosterStatuses();
   render();
+}
+
+function saveRosterStatusesFromImport(statusesByDate) {
+  state.rosterStatusesByDate = {
+    ...state.rosterStatusesByDate,
+    ...statusesByDate
+  };
+  saveRosterStatuses();
 }
 
 function isRosterFlight(flight) {
@@ -550,6 +575,213 @@ function toggleRosterFlight(flight) {
   }
 
   render();
+}
+
+function unfoldIcsLines(text) {
+  return String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .reduce((lines, line) => {
+      if (/^[ \t]/.test(line) && lines.length) {
+        lines[lines.length - 1] += line.slice(1);
+      } else {
+        lines.push(line);
+      }
+      return lines;
+    }, []);
+}
+
+function unescapeIcsValue(value) {
+  return String(value || "")
+    .replace(/\\n/gi, " ")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\\\/g, "\\")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getIcsLineName(line) {
+  return line.split(":", 1)[0].split(";", 1)[0].toUpperCase();
+}
+
+function getIcsLineValue(line) {
+  const separatorIndex = line.indexOf(":");
+  return separatorIndex >= 0 ? unescapeIcsValue(line.slice(separatorIndex + 1)) : "";
+}
+
+function parseIcsDate(value) {
+  const text = String(value || "").trim();
+  const dateMatch = text.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (!dateMatch) {
+    return "";
+  }
+
+  return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+}
+
+function parseFlexibleDate(value) {
+  const text = String(value || "").trim();
+  const isoMatch = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  const ukMatch = text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
+  if (ukMatch) {
+    return `${ukMatch[3]}-${ukMatch[2].padStart(2, "0")}-${ukMatch[1].padStart(2, "0")}`;
+  }
+
+  const monthMatch = text.match(/\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+(20\d{2})\b/i);
+  if (monthMatch) {
+    const monthNumber = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+      .indexOf(monthMatch[2].slice(0, 3).toLowerCase()) + 1;
+    return `${monthMatch[3]}-${String(monthNumber).padStart(2, "0")}-${monthMatch[1].padStart(2, "0")}`;
+  }
+
+  return "";
+}
+
+function parseIcsEvents(text) {
+  const events = [];
+  let event = null;
+
+  unfoldIcsLines(text).forEach((line) => {
+    const name = getIcsLineName(line);
+    if (name === "BEGIN" && getIcsLineValue(line).toUpperCase() === "VEVENT") {
+      event = {};
+      return;
+    }
+
+    if (name === "END" && getIcsLineValue(line).toUpperCase() === "VEVENT") {
+      if (event?.date) {
+        events.push(event);
+      }
+      event = null;
+      return;
+    }
+
+    if (!event) {
+      return;
+    }
+
+    if (name === "SUMMARY" || name === "DESCRIPTION" || name === "LOCATION") {
+      event[name.toLowerCase()] = getIcsLineValue(line);
+    } else if (name === "DTSTART") {
+      event.date = parseIcsDate(getIcsLineValue(line));
+    }
+  });
+
+  return events;
+}
+
+function getRosterStatusFromEvent(event) {
+  const text = `${event.summary || ""} ${event.description || ""}`.toUpperCase();
+  return ROSTER_STATUS_OPTIONS.find((status) => new RegExp(`\\b${status}\\b`).test(text)) || "";
+}
+
+function getFlightNumbersFromText(text) {
+  const flightNumbers = new Set();
+
+  for (const match of String(text || "").toUpperCase().matchAll(/\b(?:LS|EXS)\s?(\d{2,4}[A-Z]?)\b/g)) {
+    flightNumbers.add(`LS${match[1]}`);
+  }
+
+  return [...flightNumbers];
+}
+
+function getFlightNumbersFromEvent(event) {
+  return getFlightNumbersFromText(`${event.summary || ""} ${event.description || ""} ${event.location || ""}`);
+}
+
+function parsePlainRosterEvents(text) {
+  const events = [];
+  let currentDate = "";
+
+  String(text || "").split(/\r?\n/).forEach((line) => {
+    const date = parseFlexibleDate(line);
+    if (date) {
+      currentDate = date;
+    }
+
+    const flightNumbers = getFlightNumbersFromText(line);
+    if (currentDate && flightNumbers.length) {
+      events.push({
+        date: currentDate,
+        summary: line,
+        description: line
+      });
+    }
+
+    const status = ROSTER_STATUS_OPTIONS.find((option) => new RegExp(`\\b${option}\\b`, "i").test(line));
+    if (currentDate && status && !flightNumbers.length) {
+      events.push({
+        date: currentDate,
+        summary: status,
+        description: line
+      });
+    }
+  });
+
+  return events;
+}
+
+function parseRosterImportEvents(text) {
+  return /BEGIN:VCALENDAR/i.test(text)
+    ? parseIcsEvents(text)
+    : parsePlainRosterEvents(text);
+}
+
+function getNearbyDates(dateString) {
+  return [dateString, getNextDateString(dateString)];
+}
+
+async function findRosterFlightsForEvent(event) {
+  const flightNumbers = getFlightNumbersFromEvent(event);
+  if (!flightNumbers.length) {
+    return [];
+  }
+
+  const eventDates = getNearbyDates(event.date);
+  await ensureStaticFlightsForDates(eventDates);
+
+  const flightNumberSet = new Set(flightNumbers);
+  return eventDates
+    .flatMap((dateString) => getFlightsForDate(dateString))
+    .filter((flight) => flight.isJet2)
+    .filter((flight) => flightNumberSet.has(String(flight.flightNumber || "").toUpperCase()))
+    .filter((flight, index, flights) => {
+      return flights.findIndex((candidate) => getRosterFlightKey(candidate) === getRosterFlightKey(flight)) === index;
+    });
+}
+
+async function importRosterText(text) {
+  const events = parseRosterImportEvents(text);
+  if (!events.length) {
+    throw new Error("No dated roster items found. Try an .ics export or paste text containing dates and LS flight numbers.");
+  }
+
+  const statusesByDate = {};
+  const matchedFlights = [];
+
+  for (const event of events) {
+    const status = getRosterStatusFromEvent(event);
+    if (status) {
+      statusesByDate[event.date] = status;
+    }
+
+    matchedFlights.push(...await findRosterFlightsForEvent(event));
+  }
+
+  saveRosterStatusesFromImport(statusesByDate);
+  saveRosterFlightsFromImport(matchedFlights);
+
+  return {
+    eventCount: events.length,
+    flightCount: new Set(matchedFlights.map(getRosterFlightKey)).size,
+    statusCount: Object.keys(statusesByDate).length
+  };
 }
 
 function isFlightMarkedCompleted(flight) {
@@ -1052,10 +1284,38 @@ function renderRosterResults() {
   const rosterBody = fragment.querySelector(".roster-body");
   const rosterSection = fragment.querySelector(".roster-section");
   const calendarSection = fragment.querySelector(".roster-calendar-section");
+  const importForm = fragment.querySelector(".roster-import-form");
+  const importFile = fragment.querySelector(".roster-import-file");
+  const importText = fragment.querySelector(".roster-import-text");
+  const importStatus = fragment.querySelector(".roster-import-status");
 
   fragment.querySelector(".roster-pill").textContent = `${rosterFlights.length} sectors`;
   fragment.querySelector(".roster-table-pill").textContent = `${rosterListFlights.length} this month`;
   fragment.querySelector(".roster-list-month").textContent = formatMonthLabel(state.rosterListMonth);
+  importStatus.textContent = state.rosterImportMessage;
+  importForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const file = importFile.files?.[0];
+    const pastedText = importText.value.trim();
+
+    if (!file && !pastedText) {
+      state.rosterImportMessage = "Paste CAE roster text or choose a downloaded roster file first.";
+      render();
+      return;
+    }
+
+    state.rosterImportMessage = "Importing roster...";
+    render();
+
+    try {
+      const text = pastedText || await file.text();
+      const result = await importRosterText(text);
+      state.rosterImportMessage = `Imported ${result.flightCount} flights and ${result.statusCount} statuses from ${result.eventCount} roster items.`;
+    } catch (error) {
+      state.rosterImportMessage = error.message;
+    }
+    render();
+  });
   fragment.querySelectorAll(".roster-view-button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.rosterView === state.rosterView);
     button.addEventListener("click", () => {

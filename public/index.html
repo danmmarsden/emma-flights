@@ -119,6 +119,13 @@
           </div>
         </div>
         <p class="roster-storage-note">Roster is saved on this device.</p>
+        <form class="roster-import-form">
+          <label class="roster-import-label" for="rosterImportFile">Import CAE roster export</label>
+          <input id="rosterImportFile" class="roster-import-file" type="file" accept=".ics,.ical,.csv,.txt,text/calendar,text/csv,text/plain">
+          <textarea class="roster-import-text" rows="3" placeholder="Or paste roster text containing dates and LS/EXS flight numbers"></textarea>
+          <button class="roster-import-button" type="submit">Import</button>
+          <p class="roster-import-status" aria-live="polite"></p>
+        </form>
 
         <div class="tables">
           <section class="table-card roster-section">

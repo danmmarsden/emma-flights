@@ -261,6 +261,68 @@ h1 {
   text-transform: uppercase;
 }
 
+.roster-import-form {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(16rem, 2fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 8px;
+  background: rgba(9, 11, 13, 0.32);
+}
+
+.roster-import-label,
+.roster-import-status {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roster-import-label {
+  grid-column: 1 / -1;
+}
+
+.roster-import-file,
+.roster-import-text,
+.roster-import-button {
+  min-width: 0;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #1f2b33, #151d24);
+  color: var(--text);
+  font-family: var(--board-font);
+  font-size: 0.82rem;
+}
+
+.roster-import-file {
+  padding: 9px;
+}
+
+.roster-import-text {
+  min-height: 44px;
+  padding: 10px;
+  resize: vertical;
+}
+
+.roster-import-button {
+  appearance: none;
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 11px 14px;
+  text-transform: uppercase;
+}
+
+.roster-import-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  min-height: 1rem;
+}
+
 .roster-view-controls,
 .calendar-nav {
   display: inline-flex;

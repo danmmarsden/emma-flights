@@ -25,6 +25,7 @@ const state = {
   rosterSelectMode: false,
   showingRoster: false,
   rosterView: "table",
+  rosterListMonth: "",
   rosterCalendarMonth: "",
   rosterStatusPickerDate: "",
   rosterStatusesByDate: {},
@@ -33,6 +34,7 @@ const state = {
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
+const LISTING_DAYS_AHEAD = 45;
 const ROSTER_STORAGE_KEY = "lba-flight-tracker-roster";
 const ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY = "lba-flight-tracker-roster-flight-snapshots";
 const ROSTER_STATUS_STORAGE_KEY = "lba-flight-tracker-roster-statuses";
@@ -462,6 +464,29 @@ function getNextDateString(dateString) {
   return date.toISOString().slice(0, 10);
 }
 
+function getDateWindow(startDate, daysAhead) {
+  const dates = [];
+  let dateString = startDate;
+
+  for (let offset = 0; offset <= daysAhead; offset += 1) {
+    dates.push(dateString);
+    dateString = getNextDateString(dateString);
+  }
+
+  return dates;
+}
+
+function getListingDates(manifestDates, startDate) {
+  const manifestDateSet = new Set(manifestDates);
+  const dateWindow = getDateWindow(startDate, LISTING_DAYS_AHEAD);
+
+  if (!manifestDateSet.size) {
+    return dateWindow;
+  }
+
+  return dateWindow.filter((dateString) => manifestDateSet.has(dateString));
+}
+
 function findExpectedReturnFlight(flight) {
   if (!flight.isJet2 || !flight.airportCode) {
     return null;
@@ -818,7 +843,8 @@ function fillTable(tbody, flights, emptyLabel) {
 
 function getRosterFlights() {
   const rosterKeys = new Set(state.rosterFlightKeys);
-  const flights = state.dates.flatMap((dateString) => getFlightsForDate(dateString));
+  const dates = [...new Set([...state.dates, ...getRosterDatesFromKeys()])];
+  const flights = dates.flatMap((dateString) => getFlightsForDate(dateString));
   const byRosterKey = new Map(flights.map((flight) => [getRosterFlightKey(flight), flight]));
 
   return [...rosterKeys]
@@ -842,6 +868,19 @@ function ensureRosterCalendarMonth(rosterDepartureFlights) {
   const nextDeparture = rosterDepartureFlights.find((flight) => flight.date >= today) || rosterDepartureFlights[0];
   const selectedDate = state.dates[state.selectedDateIndex];
   state.rosterCalendarMonth = getMonthKey(nextDeparture?.date || selectedDate || today);
+}
+
+function ensureRosterListMonth() {
+  if (state.rosterListMonth) {
+    return;
+  }
+
+  state.rosterListMonth = getMonthKey(getTodayDateString());
+}
+
+function getRosterFlightsForListMonth(rosterFlights) {
+  ensureRosterListMonth();
+  return rosterFlights.filter((flight) => getMonthKey(flight.date) === state.rosterListMonth);
 }
 
 function createCalendarFlightItem(flight) {
@@ -1007,6 +1046,7 @@ function renderRosterCalendar(fragment, rosterDepartureFlights) {
 function renderRosterResults() {
   results.replaceChildren();
   const rosterFlights = getRosterFlights();
+  const rosterListFlights = getRosterFlightsForListMonth(rosterFlights);
   const rosterDepartureFlights = getRosterDepartureFlights(rosterFlights);
   const fragment = rosterTemplate.content.cloneNode(true);
   const rosterBody = fragment.querySelector(".roster-body");
@@ -1014,7 +1054,8 @@ function renderRosterResults() {
   const calendarSection = fragment.querySelector(".roster-calendar-section");
 
   fragment.querySelector(".roster-pill").textContent = `${rosterFlights.length} sectors`;
-  fragment.querySelector(".roster-table-pill").textContent = `${rosterFlights.length} saved`;
+  fragment.querySelector(".roster-table-pill").textContent = `${rosterListFlights.length} this month`;
+  fragment.querySelector(".roster-list-month").textContent = formatMonthLabel(state.rosterListMonth);
   fragment.querySelectorAll(".roster-view-button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.rosterView === state.rosterView);
     button.addEventListener("click", () => {
@@ -1022,7 +1063,13 @@ function renderRosterResults() {
       render();
     });
   });
-  fragment.querySelectorAll(".calendar-nav-button").forEach((button) => {
+  fragment.querySelectorAll(".roster-list-nav-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.rosterListMonth = shiftMonthKey(state.rosterListMonth, Number(button.dataset.rosterListStep));
+      render();
+    });
+  });
+  calendarSection.querySelectorAll(".calendar-nav-button").forEach((button) => {
     button.addEventListener("click", () => {
       state.rosterCalendarMonth = shiftMonthKey(state.rosterCalendarMonth, Number(button.dataset.calendarStep));
       render();
@@ -1034,8 +1081,12 @@ function renderRosterResults() {
     const row = document.createElement("tr");
     row.innerHTML = `<td colspan="7" class="empty-state">No flights saved to your roster yet.</td>`;
     rosterBody.appendChild(row);
+  } else if (!rosterListFlights.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="7" class="empty-state">No roster flights saved for ${formatMonthLabel(state.rosterListMonth)}.</td>`;
+    rosterBody.appendChild(row);
   } else {
-    rosterFlights.forEach((flight) => rosterBody.appendChild(createRosterRow(flight)));
+    rosterListFlights.forEach((flight) => rosterBody.appendChild(createRosterRow(flight)));
   }
 
   rosterSection.hidden = state.rosterView !== "table";
@@ -1133,7 +1184,7 @@ function render() {
         ? "Using live data for today. "
         : liveStatus === "fallback"
           ? `${liveMessage || "Live data unavailable, showing scheduled fallback data."} `
-          : ""}Updated ${formatTimestamp(generatedAt)}. Browse forward until the dataset runs out. Data source: <a href="${sourceBaseUrl}" target="_blank" rel="noreferrer">${sourceName}</a>.`
+          : ""}Updated ${formatTimestamp(generatedAt)}. Browse today and the next ${LISTING_DAYS_AHEAD} days. Data source: <a href="${sourceBaseUrl}" target="_blank" rel="noreferrer">${sourceName}</a>.`
     : "";
 }
 
@@ -1220,7 +1271,10 @@ async function loadFlights() {
     state.airports = airportsPayload.airports || payload.airports || {};
     const manifestDates = Array.isArray(payload.dates) ? payload.dates : [];
     const fallbackDate = getTodayDateString();
-    state.dates = manifestDates.length ? manifestDates : await discoverAvailableSplitDates(fallbackDate);
+    state.dates = getListingDates(manifestDates, fallbackDate);
+    if (!state.dates.length) {
+      state.dates = await discoverAvailableSplitDates(fallbackDate, LISTING_DAYS_AHEAD + 1);
+    }
     if (!state.dates.length) {
       state.dates = [fallbackDate];
     }

@@ -14,7 +14,7 @@ const OUTPUT_PATH = path.join(__dirname, "..", "public", "data", "flights.json")
 const FLIGHTS_BY_DATE_OUTPUT_DIR = path.join(__dirname, "..", "public", "data", "flights");
 const AIRPORTS_OUTPUT_PATH = path.join(__dirname, "..", "public", "data", "airports.json");
 const OURAIRPORTS_BASE = "https://davidmegginson.github.io/ourairports-data";
-const MAX_DAYS_AHEAD = 45;
+const MAX_DAYS_AHEAD = 46;
 const EMPTY_DAY_STOP_THRESHOLD = 3;
 const SOURCE_HEADERS = {
   "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",

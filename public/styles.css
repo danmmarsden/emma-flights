@@ -280,6 +280,15 @@ h1 {
   text-align: center;
 }
 
+.roster-list-nav {
+  width: auto;
+}
+
+.roster-list-nav .roster-list-month {
+  min-width: 14rem;
+  text-align: center;
+}
+
 .roster-view-button,
 .calendar-nav-button {
   appearance: none;

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T13:43:44.683Z",
+  "generatedAt": "2026-10-06T13:51:42.315Z",
   "source": {
     "name": "OurAirports",
     "baseUrl": "https://ourairports.com/data/"
@@ -156,6 +156,25 @@
       "homeLink": "https://www.aena.es/en/josep-tarradellas-barcelona-el-prat.html",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Barcelona%E2%80%93El_Prat_Airport",
       "distanceMiles": 885
+    },
+    "BER": {
+      "ident": "EDDB",
+      "type": "large_airport",
+      "name": "Berlin Brandenburg Airport",
+      "latitude": 52.361738,
+      "longitude": 13.502341,
+      "elevationFt": 157,
+      "continent": "EU",
+      "countryCode": "DE",
+      "countryName": "Germany",
+      "regionCode": "DE-BR",
+      "municipality": "Berlin",
+      "scheduledService": true,
+      "icaoCode": "EDDB",
+      "iataCode": "BER",
+      "homeLink": "https://ber.berlin-airport.de/",
+      "wikipediaLink": "https://en.wikipedia.org/wiki/Berlin_Brandenburg_Airport",
+      "distanceMiles": 636
     },
     "BFS": {
       "ident": "EGAA",

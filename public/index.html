@@ -123,7 +123,11 @@
         <div class="tables">
           <section class="table-card roster-section">
             <div class="table-header">
-              <h3>Roster</h3>
+              <div class="calendar-nav roster-list-nav" aria-label="Roster list month navigation">
+                <button class="calendar-nav-button roster-list-nav-button" type="button" data-roster-list-step="-1" aria-label="Previous roster month">&lt;</button>
+                <h3 class="roster-list-month">Roster</h3>
+                <button class="calendar-nav-button roster-list-nav-button" type="button" data-roster-list-step="1" aria-label="Next roster month">&gt;</button>
+              </div>
               <span class="pill roster-table-pill"></span>
             </div>
             <div class="table-wrap">

@@ -400,6 +400,11 @@ async function getLiveFlightsForDate(selectedDate, apiKey) {
     fetchLbaBoard("departures"),
     fetchLbaBoard("arrivals")
   ]);
+  const providerErrors = [
+    aeroResult.status === "rejected" ? `AeroDataBox: ${aeroResult.reason.message}` : "",
+    lbaDeparturesResult.status === "rejected" ? `LBA departures: ${lbaDeparturesResult.reason.message}` : "",
+    lbaArrivalsResult.status === "rejected" ? `LBA arrivals: ${lbaArrivalsResult.reason.message}` : ""
+  ].filter(Boolean);
   const payload = aeroResult.status === "fulfilled" ? aeroResult.value : { departures: [], arrivals: [] };
   const departures = payload.departures || [];
   const arrivals = payload.arrivals || [];
@@ -419,7 +424,13 @@ async function getLiveFlightsForDate(selectedDate, apiKey) {
     ...arrivals.map((flight) => normalizeFlight(flight, "arrivals", selectedDate))
   ];
 
-  return dedupeAndSortFlights(normalizedFlights, selectedDate);
+  const flights = dedupeAndSortFlights(normalizedFlights, selectedDate);
+
+  if (!flights.length && providerErrors.length) {
+    throw new Error(`Live data providers failed: ${providerErrors.join("; ")}`);
+  }
+
+  return flights;
 }
 
 module.exports = async (req, res) => {

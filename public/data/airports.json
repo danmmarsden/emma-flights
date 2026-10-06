@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T12:53:54.229Z",
+  "generatedAt": "2026-10-06T13:43:44.683Z",
   "source": {
     "name": "OurAirports",
     "baseUrl": "https://ourairports.com/data/"
@@ -214,25 +214,6 @@
       "wikipediaLink": "https://en.wikipedia.org/wiki/Milas-Bodrum_Airport",
       "distanceMiles": 1803
     },
-    "BOJ": {
-      "ident": "LBBG",
-      "type": "large_airport",
-      "name": "Burgas Airport",
-      "latitude": 42.569917,
-      "longitude": 27.515173,
-      "elevationFt": 135,
-      "continent": "EU",
-      "countryCode": "BG",
-      "countryName": "Bulgaria",
-      "regionCode": "BG-02",
-      "municipality": "Burgas",
-      "scheduledService": true,
-      "icaoCode": "LBBG",
-      "iataCode": "BOJ",
-      "homeLink": "",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Burgas_Airport",
-      "distanceMiles": 1537
-    },
     "BTS": {
       "ident": "LZIB",
       "type": "large_airport",
@@ -346,6 +327,25 @@
       "homeLink": "http://www.airportcluj.ro/",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Cluj_International_Airport",
       "distanceMiles": 1212
+    },
+    "CPH": {
+      "ident": "EKCH",
+      "type": "large_airport",
+      "name": "Copenhagen Kastrup Airport",
+      "latitude": 55.617900848389,
+      "longitude": 12.656000137329,
+      "elevationFt": 17,
+      "continent": "EU",
+      "countryCode": "DK",
+      "countryName": "Denmark",
+      "regionCode": "DK-84",
+      "municipality": "Copenhagen",
+      "scheduledService": true,
+      "icaoCode": "EKCH",
+      "iataCode": "CPH",
+      "homeLink": "http://www.cph.dk/en/",
+      "wikipediaLink": "https://en.wikipedia.org/wiki/Copenhagen_Airport",
+      "distanceMiles": 583
     },
     "CTA": {
       "ident": "LICC",
@@ -745,25 +745,6 @@
       "homeLink": "https://www.aena.es/en/almeria.html",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Almer%C3%ADa_International_Airport",
       "distanceMiles": 1177
-    },
-    "LIG": {
-      "ident": "LFBL",
-      "type": "medium_airport",
-      "name": "Limoges Airport",
-      "latitude": 45.862801,
-      "longitude": 1.17944,
-      "elevationFt": 1300,
-      "continent": "EU",
-      "countryCode": "FR",
-      "countryName": "France",
-      "regionCode": "FR-NAQ",
-      "municipality": "Limoges/Bellegarde",
-      "scheduledService": true,
-      "icaoCode": "LFBL",
-      "iataCode": "LIG",
-      "homeLink": "https://www.aeroportlimoges.com/en/",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Limoges_-_Bellegarde_Airport",
-      "distanceMiles": 567
     },
     "LPA": {
       "ident": "GCLP",

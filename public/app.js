@@ -213,6 +213,19 @@ function getFlightDuration(flight) {
   return flight.flightDuration || "";
 }
 
+function formatDurationMinutes(totalMinutes) {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) {
+    return "";
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return [
+    hours ? `${hours}hr${hours === 1 ? "" : "s"}` : "",
+    minutes ? `${minutes} min${minutes === 1 ? "" : "s"}` : ""
+  ].filter(Boolean).join(" ");
+}
+
 function getJourneyTimingSummary(flight) {
   return [
     getDepartureTimeEstimate(flight) ? `Dep ${getDepartureTimeEstimate(flight)}` : "",
@@ -244,6 +257,32 @@ function getDelayMinutes(flight) {
 
   const delayMinutes = Math.round((new Date(flight.revisedTime).getTime() - new Date(flight.scheduledTime).getTime()) / 60000);
   return Number.isFinite(delayMinutes) && delayMinutes >= 5 ? delayMinutes : 0;
+}
+
+function getOriginalArrivalTime(flight) {
+  return flight.type === "arrivals" ? formatTime(flight.scheduledTime) || flight.arrivalTime || "" : "";
+}
+
+function getCurrentArrivalTime(flight) {
+  return flight.type === "arrivals"
+    ? formatClockTime(getActualDateTime(flight) || flight.revisedTime || flight.arrivalTime || flight.scheduledTime || getDateTimeFromFlightTime(flight))
+    : "";
+}
+
+function getArrivalDelaySummary(flight) {
+  if (flight.type !== "arrivals") {
+    return "";
+  }
+
+  const delayMinutes = getDelayMinutes(flight);
+  const originalArrivalTime = getOriginalArrivalTime(flight);
+  const delayDuration = formatDurationMinutes(delayMinutes);
+
+  if (!delayMinutes || !originalArrivalTime || !delayDuration) {
+    return "";
+  }
+
+  return `Was ${originalArrivalTime} · ${delayDuration} late`;
 }
 
 function hasExpectedUpdate(flight) {
@@ -959,12 +998,16 @@ function createFlightRow(flight) {
   const actualTime = formatTime(actualDateTime);
   const revisedTime = formatTime(flight.revisedTime);
   const statusBadge = getStatusBadge(flight);
+  const arrivalDelaySummary = getArrivalDelaySummary(flight);
+  const currentArrivalTime = getCurrentArrivalTime(flight);
   const expectedStatusText = flight.liveStatusText && /^now due/i.test(flight.liveStatusText)
     ? flight.liveStatusText
     : revisedTime
       ? `Due ${revisedTime}`
       : "";
-  const timeCell = actualTime
+  const timeCell = arrivalDelaySummary
+    ? `<span class="time-wrap"><span class="time-main">${currentArrivalTime || flight.time}</span><span class="time-meta is-delayed" data-mobile="+${formatDurationMinutes(getDelayMinutes(flight))}">${arrivalDelaySummary}</span></span>`
+    : actualTime
     ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${actualTime}">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
     : isCancelledFlight(flight)
       ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled" data-mobile="CXL">Cancelled</span></span>`
@@ -1060,10 +1103,11 @@ function renderTimingDiagram(flight) {
   const arrivalTime = getArrivalTimeEstimate(flight);
   const actualTime = formatTime(getActualDateTime(flight));
   const revisedTime = formatTime(flight.revisedTime);
+  const arrivalDelaySummary = getArrivalDelaySummary(flight);
   const arrivalSublabel = actualTime && flight.type === "arrivals"
-    ? `Actual ${actualTime}`
+    ? [arrivalDelaySummary, `Actual ${actualTime}`].filter(Boolean).join(" · ")
     : revisedTime && flight.type === "arrivals"
-      ? `Expected ${revisedTime}`
+      ? [arrivalDelaySummary, `Expected ${revisedTime}`].filter(Boolean).join(" · ")
       : "";
   const departureSublabel = actualTime && flight.type === "departures"
     ? `Actual ${actualTime}`
@@ -1208,6 +1252,7 @@ function renderFlightModal() {
 
   const airport = getAirportForFlight(flight);
   const delayMinutes = getDelayMinutes(flight);
+  const arrivalDelaySummary = getArrivalDelaySummary(flight);
   const details = [
     ["Flight", flight.flightNumber],
     ["Airline", flight.airline],
@@ -1216,6 +1261,8 @@ function renderFlightModal() {
     ["Departure time", getDepartureTimeEstimate(flight) || "Not available"],
     ["Flight duration", getFlightDuration(flight) || "Not available"],
     ["Arrival estimate", getArrivalTimeEstimate(flight) || "Not available"],
+    ["Original arrival", getOriginalArrivalTime(flight) || "Not available"],
+    ["Arrival delay", arrivalDelaySummary || "Not available"],
     ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
     ["Expected update", hasExpectedUpdate(flight) ? (flight.liveStatusText || formatDateTime(flight.revisedTime)) : "Not available"],

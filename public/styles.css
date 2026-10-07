@@ -968,11 +968,16 @@ tbody tr.has-details:focus-visible td {
   box-shadow: var(--shadow);
 }
 
-.flight-modal-close {
-  appearance: none;
+.flight-modal-actions {
   position: absolute;
   top: 18px;
   right: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.flight-modal-action {
+  appearance: none;
   border: 1px solid var(--line-strong);
   background: linear-gradient(180deg, #252c34, #171c22);
   color: var(--text);
@@ -984,6 +989,11 @@ tbody tr.has-details:focus-visible td {
   letter-spacing: 0.08em;
   font-size: 0.76rem;
   font-weight: 700;
+}
+
+.flight-modal-action:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
 }
 
 .flight-modal-eyebrow,

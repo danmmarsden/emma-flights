@@ -22,6 +22,7 @@ const state = {
   liveSourceByDate: {},
   liveRefreshTimer: null,
   liveRefreshInFlight: false,
+  manualFlightRefreshAvailableAt: 0,
   rosterSelectMode: false,
   showingRoster: false,
   rosterView: "table",
@@ -35,6 +36,7 @@ const state = {
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 60 * 1000;
+const MANUAL_FLIGHT_REFRESH_COOLDOWN_MS = 60 * 1000;
 const LISTING_DAYS_AHEAD = 45;
 const ROSTER_STORAGE_KEY = "lba-flight-tracker-roster";
 const ROSTER_FLIGHT_SNAPSHOT_STORAGE_KEY = "lba-flight-tracker-roster-flight-snapshots";
@@ -53,6 +55,7 @@ const sourceText = document.getElementById("sourceText");
 const dayTemplate = document.getElementById("dayTemplate");
 const rosterTemplate = document.getElementById("rosterTemplate");
 const flightModal = document.getElementById("flightModal");
+const refreshFlightModalButton = document.getElementById("refreshFlightModalButton");
 const closeFlightModalButton = document.getElementById("closeFlightModalButton");
 const flightModalEyebrow = document.getElementById("flightModalEyebrow");
 const flightModalTitle = document.getElementById("flightModalTitle");
@@ -359,6 +362,15 @@ function getVisibleFlights() {
 
 function getFlightKey(flight) {
   return `${flight.type}|${flight.flightNumber}|${flight.airportCode || flight.route}`;
+}
+
+function getFlightUrlIdentity(flight) {
+  return {
+    date: flight.date,
+    type: flight.type,
+    flight: String(flight.flightNumber || ""),
+    airport: String(flight.airportCode || "")
+  };
 }
 
 function getRosterFlightKey(flight) {
@@ -1071,6 +1083,36 @@ function renderTimingDiagram(flight) {
   `;
 }
 
+function getManualFlightRefreshWaitSeconds() {
+  return Math.max(0, Math.ceil((state.manualFlightRefreshAvailableAt - Date.now()) / 1000));
+}
+
+function renderFlightModalRefreshButton(flight) {
+  const today = getTodayDateString();
+  const waitSeconds = getManualFlightRefreshWaitSeconds();
+  const liveApiAvailable = Boolean(getLiveApiUrl(today));
+  const canRefresh = flight.date === today && liveApiAvailable && !state.liveRefreshInFlight && waitSeconds === 0;
+
+  refreshFlightModalButton.disabled = !canRefresh;
+  refreshFlightModalButton.textContent = flight.date !== today
+    ? "Today only"
+    : !liveApiAvailable
+      ? "No live feed"
+      : state.liveRefreshInFlight
+        ? "Refreshing"
+        : waitSeconds > 0
+          ? `Refresh ${waitSeconds}s`
+          : "Refresh";
+
+  if (waitSeconds > 0 && flightModal.open) {
+    window.setTimeout(() => {
+      if (state.selectedFlight) {
+        renderFlightModal();
+      }
+    }, 1000);
+  }
+}
+
 function createRosterRow(flight) {
   const row = createFlightRow(flight);
   const dateCell = document.createElement("td");
@@ -1080,22 +1122,85 @@ function createRosterRow(flight) {
   return row;
 }
 
-function openFlightModal(flight) {
+function updateFlightModalUrl(flight, mode = "push") {
+  const url = new URL(window.location.href);
+  const identity = getFlightUrlIdentity(flight);
+
+  Object.entries(identity).forEach(([key, value]) => {
+    if (value) {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", url);
+}
+
+function clearFlightModalUrl(mode = "push") {
+  const url = new URL(window.location.href);
+  ["date", "type", "flight", "airport"].forEach((key) => url.searchParams.delete(key));
+  window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", url);
+}
+
+function findFlightByIdentity(identity) {
+  return getFlightsForDate(identity.date).find((flight) => {
+    return flight.type === identity.type &&
+      String(flight.flightNumber || "").toUpperCase() === String(identity.flight || "").toUpperCase() &&
+      (!identity.airport || String(flight.airportCode || "").toUpperCase() === String(identity.airport).toUpperCase());
+  }) || null;
+}
+
+function getSelectedFlightIdentityFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get("date") || "";
+  const type = params.get("type") || "";
+  const flight = params.get("flight") || "";
+  const airport = params.get("airport") || "";
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !["departures", "arrivals"].includes(type) || !flight) {
+    return null;
+  }
+
+  return { date, type, flight, airport };
+}
+
+function refreshSelectedFlightFromState() {
+  if (!state.selectedFlight) {
+    return;
+  }
+
+  const nextFlight = findFlightByIdentity(getFlightUrlIdentity(state.selectedFlight));
+  if (nextFlight) {
+    state.selectedFlight = nextFlight;
+  }
+}
+
+function openFlightModal(flight, { updateUrl = true, replaceUrl = false } = {}) {
   if (!hasExtraDetails(flight)) {
     return;
   }
 
   state.selectedFlight = flight;
+  if (updateUrl) {
+    updateFlightModalUrl(flight, replaceUrl ? "replace" : "push");
+  }
   renderFlightModal();
-  flightModal.showModal();
+  if (!flightModal.open) {
+    flightModal.showModal();
+  }
 }
 
-function closeFlightModal() {
+function closeFlightModal({ updateUrl = true, replaceUrl = false } = {}) {
   state.selectedFlight = null;
-  flightModal.close();
+  if (updateUrl) {
+    clearFlightModalUrl(replaceUrl ? "replace" : "push");
+  }
+  if (flightModal.open) {
+    flightModal.close();
+  }
 }
 
 function renderFlightModal() {
+  refreshSelectedFlightFromState();
   const flight = state.selectedFlight;
   if (!flight) {
     return;
@@ -1138,6 +1243,7 @@ function renderFlightModal() {
   flightModalEyebrow.textContent = flight.type === "departures" ? "Departure details" : "Arrival details";
   flightModalTitle.textContent = flight.flightNumber;
   flightModalSubtitle.textContent = `${flight.airline} • ${flight.route}`;
+  renderFlightModalRefreshButton(flight);
   renderTimingDiagram(flight);
   flightModalGrid.replaceChildren(...details.map(([label, value]) => createDetailItem(label, value)));
 }
@@ -1634,10 +1740,36 @@ async function loadFlights() {
       ...getRosterDatesFromKeys()
     ]);
     render();
+    await restoreFlightModalFromUrl();
   } catch (error) {
     results.replaceChildren();
     statusText.textContent = `Could not load flights: ${error.message}`;
     sourceText.textContent = "";
+  }
+}
+
+async function restoreFlightModalFromUrl() {
+  const identity = getSelectedFlightIdentityFromUrl();
+  if (!identity) {
+    if (flightModal.open) {
+      closeFlightModal({ updateUrl: false });
+    }
+    return;
+  }
+
+  await ensureStaticFlightsForDate(identity.date);
+
+  const dateIndex = state.dates.indexOf(identity.date);
+  if (dateIndex >= 0) {
+    state.selectedDateIndex = dateIndex;
+  }
+  state.activeView = identity.type;
+  state.showingRoster = false;
+  render();
+
+  const flight = findFlightByIdentity(identity);
+  if (flight) {
+    openFlightModal(flight, { replaceUrl: true });
   }
 }
 
@@ -1684,6 +1816,10 @@ async function loadLiveFlightsForTodayIfAvailable() {
     if (state.dates[state.selectedDateIndex] === today) {
       render();
     }
+    if (state.selectedFlight?.date === today) {
+      refreshSelectedFlightFromState();
+      renderFlightModal();
+    }
   } catch (error) {
     state.liveStatusByDate[today] = "fallback";
     state.liveMessageByDate[today] = String(error.message).includes("(429)")
@@ -1693,9 +1829,32 @@ async function loadLiveFlightsForTodayIfAvailable() {
     if (state.dates[state.selectedDateIndex] === today) {
       render();
     }
+    if (state.selectedFlight?.date === today) {
+      renderFlightModal();
+    }
   } finally {
     state.liveRefreshInFlight = false;
+    if (state.selectedFlight?.date === today) {
+      renderFlightModal();
+    }
   }
+}
+
+async function refreshSelectedFlightLiveData() {
+  if (!state.selectedFlight || state.selectedFlight.date !== getTodayDateString()) {
+    renderFlightModal();
+    return;
+  }
+
+  const waitSeconds = getManualFlightRefreshWaitSeconds();
+  if (waitSeconds > 0 || state.liveRefreshInFlight) {
+    renderFlightModal();
+    return;
+  }
+
+  state.manualFlightRefreshAvailableAt = Date.now() + MANUAL_FLIGHT_REFRESH_COOLDOWN_MS;
+  renderFlightModal();
+  await loadLiveFlightsForTodayIfAvailable();
 }
 
 function startLiveRefresh() {
@@ -1754,7 +1913,9 @@ myRosterToggle.addEventListener("click", async () => {
   render();
 });
 
-closeFlightModalButton.addEventListener("click", closeFlightModal);
+refreshFlightModalButton.addEventListener("click", refreshSelectedFlightLiveData);
+
+closeFlightModalButton.addEventListener("click", () => closeFlightModal());
 
 flightModal.addEventListener("click", (event) => {
   const bounds = flightModal.getBoundingClientRect();
@@ -1769,7 +1930,16 @@ flightModal.addEventListener("click", (event) => {
   }
 });
 
+flightModal.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeFlightModal();
+});
+
 loadFlights().then(() => {
   loadLiveFlightsForTodayIfAvailable();
   startLiveRefresh();
+});
+
+window.addEventListener("popstate", () => {
+  restoreFlightModalFromUrl();
 });

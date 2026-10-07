@@ -165,6 +165,16 @@ function formatClockTime(value) {
   return formatTime(value);
 }
 
+function getStatusDueTime(flight) {
+  const match = String(flight.liveStatusText || flight.status || "").match(/\bnow\s+due\s+(\d{1,2}:\d{2})\b/i);
+  if (!match) {
+    return "";
+  }
+
+  const [hour, minute] = match[1].split(":");
+  return `${hour.padStart(2, "0")}:${minute}`;
+}
+
 function getDateTimeFromFlightTime(flight) {
   if (flight.date && /^\d{2}:\d{2}$/.test(flight.time)) {
     return `${flight.date}T${flight.time}:00`;
@@ -206,7 +216,9 @@ function getDepartureTimeEstimate(flight) {
 }
 
 function getArrivalTimeEstimate(flight) {
-  return formatClockTime(flight.arrivalTime || (flight.type === "arrivals" ? flight.actualTime || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight) : ""));
+  return formatClockTime(flight.type === "arrivals"
+    ? getActualDateTime(flight) || getStatusDueTime(flight) || flight.arrivalTime || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight)
+    : flight.arrivalTime || "");
 }
 
 function getFlightDuration(flight) {
@@ -265,7 +277,7 @@ function getOriginalArrivalTime(flight) {
 
 function getCurrentArrivalTime(flight) {
   return flight.type === "arrivals"
-    ? formatClockTime(getActualDateTime(flight) || flight.revisedTime || flight.arrivalTime || flight.scheduledTime || getDateTimeFromFlightTime(flight))
+    ? formatClockTime(getActualDateTime(flight) || getStatusDueTime(flight) || flight.revisedTime || flight.arrivalTime || flight.scheduledTime || getDateTimeFromFlightTime(flight))
     : "";
 }
 
@@ -1001,7 +1013,7 @@ function createFlightRow(flight) {
   const statusBadge = getStatusBadge(flight);
   const arrivalDelaySummary = getArrivalDelaySummary(flight);
   const currentArrivalTime = getCurrentArrivalTime(flight);
-  const estimatedTime = revisedTime || currentArrivalTime;
+  const estimatedTime = currentArrivalTime || revisedTime;
   const estimatedStatusText = estimatedTime ? `Estimated ${estimatedTime}` : "";
   const expectedStatusText = flight.liveStatusText && /^now due/i.test(flight.liveStatusText)
     ? flight.liveStatusText

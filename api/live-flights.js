@@ -303,11 +303,33 @@ async function fetchLbaBoard(type) {
   return [];
 }
 
+function getLbaFlightTimes(flight, type) {
+  if (type === "arrivals") {
+    const scheduledTime = flight.SIBT || flight.ScheduledDateTime || "";
+    const revisedTime = flight.AODBProbableDateTime || flight.EstimatedDateTime || flight.AIBT || "";
+    const actualTime = flight.ALDT || flight.AIBT || flight.ActualDateTime || "";
+    return {
+      scheduledTime,
+      revisedTime,
+      actualTime,
+      displayTime: actualTime || revisedTime || scheduledTime
+    };
+  }
+
+  const scheduledTime = flight.SOBT || flight.ScheduledDateTime || "";
+  const revisedTime = flight.AODBProbableDateTime || flight.EstimatedDateTime || "";
+  const actualTime = flight.ATOT || flight.AOBT || flight.ActualDateTime || "";
+  return {
+    scheduledTime,
+    revisedTime,
+    actualTime,
+    displayTime: actualTime || revisedTime || scheduledTime
+  };
+}
+
 function normalizeLbaFlight(flight, type, selectedDate) {
-  const scheduledTime = flight.ScheduledDateTime || flight.SIBT || flight.SOBT || "";
-  const revisedTime = flight.EstimatedDateTime || flight.AODBProbableDateTime || "";
-  const actualTime = flight.ActualDateTime || flight.ALDT || flight.ATOT || "";
-  const timeSource = scheduledTime || revisedTime || actualTime;
+  const { scheduledTime, revisedTime, actualTime, displayTime } = getLbaFlightTimes(flight, type);
+  const timeSource = displayTime || scheduledTime || revisedTime || actualTime;
   const date = String(timeSource || "").slice(0, 10) || selectedDate;
   const airline = flight.AirlineDescFormatted || flight.AirlineDesc || "Unknown airline";
   const airlineCode = flight.AirlineIATA || "";
@@ -322,7 +344,7 @@ function normalizeLbaFlight(flight, type, selectedDate) {
   return {
     type,
     date,
-    time: extractTime(scheduledTime) || extractTime(timeSource) || "--:--",
+    time: extractTime(displayTime) || extractTime(timeSource) || "--:--",
     airline,
     flightNumber,
     airportName,

@@ -7,18 +7,17 @@
     "longitude": -1.66057,
     "timeZone": "Europe/London"
   },
-  "generatedAt": "2026-10-06T13:51:42.315Z",
+  "generatedAt": "2026-10-07T12:54:04.291Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
   },
   "range": {
-    "firstDate": "2026-10-06",
-    "lastDate": "2026-11-20",
+    "firstDate": "2026-10-07",
+    "lastDate": "2026-11-21",
     "totalDays": 46
   },
   "dates": [
-    "2026-10-06",
     "2026-10-07",
     "2026-10-08",
     "2026-10-09",
@@ -63,7 +62,8 @@
     "2026-11-17",
     "2026-11-18",
     "2026-11-19",
-    "2026-11-20"
+    "2026-11-20",
+    "2026-11-21"
   ],
   "airports": {
     "ACE": {
@@ -1129,25 +1129,6 @@
       "homeLink": "http://www.riga-airport.com/",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Riga_International_Airport",
       "distanceMiles": 1021
-    },
-    "SKG": {
-      "ident": "LGTS",
-      "type": "large_airport",
-      "name": "Thessaloniki Macedonia International Airport",
-      "latitude": 40.51928,
-      "longitude": 22.970009,
-      "elevationFt": 22,
-      "continent": "EU",
-      "countryCode": "GR",
-      "countryName": "Greece",
-      "regionCode": "GR-B",
-      "municipality": "Thessaloniki",
-      "scheduledService": true,
-      "icaoCode": "LGTS",
-      "iataCode": "SKG",
-      "homeLink": "https://www.skg-airport.gr/en",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Thessaloniki_Airport",
-      "distanceMiles": 1466
     },
     "SPU": {
       "ident": "LDSP",

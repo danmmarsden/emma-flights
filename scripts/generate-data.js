@@ -20,6 +20,7 @@ const SOURCE_HEADERS = {
   "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",
   accept: "text/html,application/xhtml+xml"
 };
+const flightScheduleLoadsByNumber = new Map();
 
 function decodeHtml(text) {
   return text
@@ -239,6 +240,121 @@ function parseFlights(html, type, date, sourceUrl) {
   return flights;
 }
 
+function getFlightDetailUrl(flightNumber) {
+  return `${SOURCE_BASE}/${encodeURIComponent(flightNumber)}`;
+}
+
+function getScheduleItemBlocks(html) {
+  const blocks = [];
+  let searchIndex = 0;
+
+  while (searchIndex < html.length) {
+    const startIndex = html.indexOf('<div class="schedule-item"', searchIndex);
+    if (startIndex === -1) {
+      break;
+    }
+
+    const endIndex = html.indexOf('<div id="a', startIndex + 1);
+    if (endIndex === -1) {
+      break;
+    }
+
+    blocks.push(html.slice(startIndex, endIndex));
+    searchIndex = endIndex;
+  }
+
+  return blocks;
+}
+
+function extractScheduleSection(block, className, nextClassName) {
+  const startMarker = `<div class="${className}">`;
+  const startIndex = block.indexOf(startMarker);
+  if (startIndex === -1) {
+    return "";
+  }
+
+  const contentStart = startIndex + startMarker.length;
+  const endIndex = nextClassName ? block.indexOf(`<div class="${nextClassName}">`, contentStart) : -1;
+  return block.slice(contentStart, endIndex === -1 ? undefined : endIndex);
+}
+
+function extractFirstTextSoft(section) {
+  const match = section.match(/<div class="text-soft">\s*([^<]+?)\s*<\/div>/);
+  return match ? cleanText(match[1]) : "";
+}
+
+function getActiveWeekdays(block) {
+  return [...block.matchAll(/<div class=['"]weekday active\s*['"]>([^<]+)<\/div>/g)]
+    .map((match) => cleanText(match[1]).slice(0, 3).toLowerCase());
+}
+
+function getWeekdayKey(dateString) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    timeZone: "Europe/London"
+  }).format(new Date(`${dateString}T12:00:00Z`)).slice(0, 3).toLowerCase();
+}
+
+function scheduleMatchesDate(block, dateString) {
+  const activeWeekdays = getActiveWeekdays(block);
+  if (activeWeekdays.length && !activeWeekdays.includes(getWeekdayKey(dateString))) {
+    return false;
+  }
+
+  const dateMatches = [...block.matchAll(/\b20\d{2}-\d{2}-\d{2}\b/g)].map((match) => match[0]);
+  const [firstDate, secondDate] = dateMatches;
+  const begins = dateMatches.length > 1 ? firstDate : "";
+  const validTo = dateMatches.length > 1 ? secondDate : firstDate;
+
+  return (!begins || dateString >= begins) && (!validTo || dateString <= validTo);
+}
+
+function parseArrivalTimeFromFlightDetail(html, dateString) {
+  for (const block of getScheduleItemBlocks(html)) {
+    const firstSection = extractScheduleSection(block, "first", "second");
+    const secondSection = extractScheduleSection(block, "second", "third");
+
+    if (!/\bLeeds\s*\(LBA\)/i.test(cleanText(secondSection)) || !scheduleMatchesDate(block, dateString)) {
+      continue;
+    }
+
+    const arrivalTime = extractFirstTextSoft(secondSection);
+    if (/^\d{2}:\d{2}$/.test(arrivalTime)) {
+      return arrivalTime;
+    }
+
+    const departureTime = extractFirstTextSoft(firstSection);
+    if (/^\d{2}:\d{2}$/.test(departureTime)) {
+      return departureTime;
+    }
+  }
+
+  return "";
+}
+
+async function fetchFlightScheduleHtml(flightNumber) {
+  if (!flightScheduleLoadsByNumber.has(flightNumber)) {
+    flightScheduleLoadsByNumber.set(flightNumber, fetchHtml(getFlightDetailUrl(flightNumber)).catch(() => ""));
+  }
+
+  return flightScheduleLoadsByNumber.get(flightNumber);
+}
+
+async function correctArrivalTimes(flights, date) {
+  return Promise.all(flights.map(async (flight) => {
+    const html = await fetchFlightScheduleHtml(flight.flightNumber);
+    const arrivalTime = parseArrivalTimeFromFlightDetail(html, date);
+
+    return arrivalTime
+      ? {
+          ...flight,
+          time: arrivalTime,
+          scheduledTime: `${date}T${arrivalTime}:00`
+        }
+      : flight;
+  }));
+}
+
 async function fetchHtml(url) {
   const headerArgs = Object.entries(SOURCE_HEADERS).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
   const { stdout } = await execFileAsync("curl", ["-L", "--silent", "--show-error", ...headerArgs, url], {
@@ -252,7 +368,8 @@ async function fetchHtml(url) {
 async function fetchFlightsForDate(type, date) {
   const sourceUrl = getSourceUrl(type, date);
   const html = await fetchHtml(sourceUrl);
-  return parseFlights(html, type, date, sourceUrl);
+  const flights = parseFlights(html, type, date, sourceUrl);
+  return type === "arrivals" ? correctArrivalTimes(flights, date) : flights;
 }
 
 async function fetchOurAirportsDataset(fileName) {

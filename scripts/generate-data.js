@@ -309,27 +309,32 @@ function scheduleMatchesDate(block, dateString) {
   return (!begins || dateString >= begins) && (!validTo || dateString <= validTo);
 }
 
-function parseArrivalTimeFromFlightDetail(html, dateString) {
+function parseFlightDurationFromDetail(html) {
+  const match = cleanText(html).match(/flight time is about\s+([0-9]+:[0-9]{2})/i);
+  return match ? match[1] : "";
+}
+
+function parseScheduleDetailsFromFlightDetail(html, dateString) {
   for (const block of getScheduleItemBlocks(html)) {
     const firstSection = extractScheduleSection(block, "first", "second");
     const secondSection = extractScheduleSection(block, "second", "third");
 
-    if (!/\bLeeds\s*\(LBA\)/i.test(cleanText(secondSection)) || !scheduleMatchesDate(block, dateString)) {
+    if (!scheduleMatchesDate(block, dateString)) {
       continue;
     }
 
-    const arrivalTime = extractFirstTextSoft(secondSection);
-    if (/^\d{2}:\d{2}$/.test(arrivalTime)) {
-      return arrivalTime;
-    }
-
     const departureTime = extractFirstTextSoft(firstSection);
-    if (/^\d{2}:\d{2}$/.test(departureTime)) {
-      return departureTime;
-    }
+    const arrivalTime = extractFirstTextSoft(secondSection);
+    return {
+      departureTime: /^\d{2}:\d{2}$/.test(departureTime) ? departureTime : "",
+      arrivalTime: /^\d{2}:\d{2}$/.test(arrivalTime) ? arrivalTime : "",
+      arrivesAtLba: /\bLeeds\s*\(LBA\)/i.test(cleanText(secondSection)),
+      departsFromLba: /\bLeeds\s*\(LBA\)/i.test(cleanText(firstSection)),
+      flightDuration: parseFlightDurationFromDetail(html)
+    };
   }
 
-  return "";
+  return null;
 }
 
 async function fetchFlightScheduleHtml(flightNumber) {
@@ -340,18 +345,30 @@ async function fetchFlightScheduleHtml(flightNumber) {
   return flightScheduleLoadsByNumber.get(flightNumber);
 }
 
-async function correctArrivalTimes(flights, date) {
+async function enrichScheduleDetails(flights, date) {
   return Promise.all(flights.map(async (flight) => {
     const html = await fetchFlightScheduleHtml(flight.flightNumber);
-    const arrivalTime = parseArrivalTimeFromFlightDetail(html, date);
+    const scheduleDetails = parseScheduleDetailsFromFlightDetail(html, date);
 
-    return arrivalTime
-      ? {
-          ...flight,
-          time: arrivalTime,
-          scheduledTime: `${date}T${arrivalTime}:00`
-        }
-      : flight;
+    if (!scheduleDetails) {
+      return flight;
+    }
+
+    const displayTime = flight.type === "arrivals" && scheduleDetails.arrivesAtLba
+      ? scheduleDetails.arrivalTime
+      : flight.type === "departures" && scheduleDetails.departsFromLba
+        ? scheduleDetails.departureTime
+        : "";
+    const scheduledTime = displayTime ? `${date}T${displayTime}:00` : "";
+
+    return {
+      ...flight,
+      time: displayTime || flight.time,
+      departureTime: scheduleDetails.departureTime,
+      arrivalTime: scheduleDetails.arrivalTime,
+      flightDuration: scheduleDetails.flightDuration,
+      scheduledTime: scheduledTime || flight.scheduledTime
+    };
   }));
 }
 
@@ -369,7 +386,7 @@ async function fetchFlightsForDate(type, date) {
   const sourceUrl = getSourceUrl(type, date);
   const html = await fetchHtml(sourceUrl);
   const flights = parseFlights(html, type, date, sourceUrl);
-  return type === "arrivals" ? correctArrivalTimes(flights, date) : flights;
+  return enrichScheduleDetails(flights, date);
 }
 
 async function fetchOurAirportsDataset(fileName) {

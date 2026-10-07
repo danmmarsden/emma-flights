@@ -57,6 +57,7 @@ const closeFlightModalButton = document.getElementById("closeFlightModalButton")
 const flightModalEyebrow = document.getElementById("flightModalEyebrow");
 const flightModalTitle = document.getElementById("flightModalTitle");
 const flightModalSubtitle = document.getElementById("flightModalSubtitle");
+const flightTimingDiagram = document.getElementById("flightTimingDiagram");
 const flightModalGrid = document.getElementById("flightModalGrid");
 
 function getDataUrl() {
@@ -149,6 +150,18 @@ function formatDistance(miles) {
   return Number.isFinite(miles) ? `${miles.toLocaleString("en-GB")} miles` : "Not available";
 }
 
+function formatClockTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+
+  return formatTime(value);
+}
+
 function getDateTimeFromFlightTime(flight) {
   if (flight.date && /^\d{2}:\d{2}$/.test(flight.time)) {
     return `${flight.date}T${flight.time}:00`;
@@ -183,6 +196,26 @@ function getScheduledDateTime(flight) {
   }
 
   return flight.time || "Not available";
+}
+
+function getDepartureTimeEstimate(flight) {
+  return formatClockTime(flight.departureTime || (flight.type === "departures" ? flight.actualTime || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight) : ""));
+}
+
+function getArrivalTimeEstimate(flight) {
+  return formatClockTime(flight.arrivalTime || (flight.type === "arrivals" ? flight.actualTime || flight.revisedTime || flight.scheduledTime || getDateTimeFromFlightTime(flight) : ""));
+}
+
+function getFlightDuration(flight) {
+  return flight.flightDuration || "";
+}
+
+function getJourneyTimingSummary(flight) {
+  return [
+    getDepartureTimeEstimate(flight) ? `Dep ${getDepartureTimeEstimate(flight)}` : "",
+    getFlightDuration(flight) ? `Dur ${getFlightDuration(flight)}` : "",
+    getArrivalTimeEstimate(flight) ? `Arr ${getArrivalTimeEstimate(flight)}` : ""
+  ].filter(Boolean).join(" • ");
 }
 
 function getActualDateTime(flight) {
@@ -452,6 +485,9 @@ function mergeFlightData(staticFlight, liveFlight) {
   return {
     ...staticFlight,
     ...liveFlight,
+    departureTime: liveFlight.departureTime || staticFlight.departureTime,
+    arrivalTime: liveFlight.arrivalTime || staticFlight.arrivalTime,
+    flightDuration: liveFlight.flightDuration || staticFlight.flightDuration,
     airportFullName: staticFlight.airportFullName || liveFlight.airportFullName,
     airportCountryCode: staticFlight.airportCountryCode || liveFlight.airportCountryCode,
     airportCountryName: staticFlight.airportCountryName || liveFlight.airportCountryName,
@@ -934,13 +970,16 @@ function createFlightRow(flight) {
   ].filter((value) => value && value !== "Not available").join(" • ");
   const routeCell = `<span class="route-wrap"><span class="route-main">${routeCode}</span>${routeMeta ? `<span class="route-meta">${routeMeta}</span>` : ""}</span>`;
   const statusCell = flight.liveStatusText || flight.status || "Not available";
+  const journeyTimingSummary = getJourneyTimingSummary(flight);
   const infoItems = flight.type === "departures"
     ? [
+        journeyTimingSummary,
         flight.gate ? `Gate ${flight.gate}` : "",
         flight.checkInDesk ? `Desk ${flight.checkInDesk}` : "",
         flight.terminal || ""
       ]
     : [
+        journeyTimingSummary,
         flight.baggageBelt ? `Belt ${flight.baggageBelt}` : "",
         flight.terminal || "",
         flight.gate ? `Gate ${flight.gate}` : ""
@@ -993,6 +1032,45 @@ function createDetailItem(label, value) {
   return item;
 }
 
+function createTimingPoint(label, value, sublabel, modifier = "") {
+  return `
+    <div class="timing-point ${modifier}">
+      <span class="timing-label">${label}</span>
+      <span class="timing-value">${value || "--:--"}</span>
+      <span class="timing-sublabel">${sublabel || ""}</span>
+    </div>
+  `;
+}
+
+function renderTimingDiagram(flight) {
+  const departureTime = getDepartureTimeEstimate(flight);
+  const duration = getFlightDuration(flight);
+  const arrivalTime = getArrivalTimeEstimate(flight);
+  const actualTime = formatTime(getActualDateTime(flight));
+  const revisedTime = formatTime(flight.revisedTime);
+  const arrivalSublabel = actualTime && flight.type === "arrivals"
+    ? `Actual ${actualTime}`
+    : revisedTime && flight.type === "arrivals"
+      ? `Expected ${revisedTime}`
+      : "";
+  const departureSublabel = actualTime && flight.type === "departures"
+    ? `Actual ${actualTime}`
+    : revisedTime && flight.type === "departures"
+      ? `Expected ${revisedTime}`
+      : "";
+
+  flightTimingDiagram.innerHTML = `
+    ${createTimingPoint("Departure", departureTime, departureSublabel)}
+    <div class="timing-line" aria-hidden="true">
+      <span class="timing-node"></span>
+      <span class="timing-track"><span class="timing-plane">✈</span></span>
+      <span class="timing-node"></span>
+      <span class="timing-duration">${duration || "Duration n/a"}</span>
+    </div>
+    ${createTimingPoint("Arrival", arrivalTime, arrivalSublabel, "is-arrival")}
+  `;
+}
+
 function createRosterRow(flight) {
   const row = createFlightRow(flight);
   const dateCell = document.createElement("td");
@@ -1030,6 +1108,9 @@ function renderFlightModal() {
     ["Airline", flight.airline],
     [flight.type === "departures" ? "Destination" : "Origin", flight.route],
     ["Status", flight.status || "Unknown"],
+    ["Departure time", getDepartureTimeEstimate(flight) || "Not available"],
+    ["Flight duration", getFlightDuration(flight) || "Not available"],
+    ["Arrival estimate", getArrivalTimeEstimate(flight) || "Not available"],
     ["Scheduled time", getScheduledDateTime(flight)],
     ["Revised time", formatDateTime(flight.revisedTime)],
     ["Expected update", hasExpectedUpdate(flight) ? (flight.liveStatusText || formatDateTime(flight.revisedTime)) : "Not available"],
@@ -1057,6 +1138,7 @@ function renderFlightModal() {
   flightModalEyebrow.textContent = flight.type === "departures" ? "Departure details" : "Arrival details";
   flightModalTitle.textContent = flight.flightNumber;
   flightModalSubtitle.textContent = `${flight.airline} • ${flight.route}`;
+  renderTimingDiagram(flight);
   flightModalGrid.replaceChildren(...details.map(([label, value]) => createDetailItem(label, value)));
 }
 

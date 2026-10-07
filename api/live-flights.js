@@ -330,6 +330,7 @@ function getLbaFlightTimes(flight, type) {
 function normalizeLbaFlight(flight, type, selectedDate) {
   const { scheduledTime, revisedTime, actualTime, displayTime } = getLbaFlightTimes(flight, type);
   const timeSource = displayTime || scheduledTime || revisedTime || actualTime;
+  const displayClockTime = extractTime(displayTime) || extractTime(timeSource) || "";
   const date = String(timeSource || "").slice(0, 10) || selectedDate;
   const airline = flight.AirlineDescFormatted || flight.AirlineDesc || "Unknown airline";
   const airlineCode = flight.AirlineIATA || "";
@@ -344,7 +345,7 @@ function normalizeLbaFlight(flight, type, selectedDate) {
   return {
     type,
     date,
-    time: extractTime(displayTime) || extractTime(timeSource) || "--:--",
+    time: displayClockTime || "--:--",
     airline,
     flightNumber,
     airportName,
@@ -360,6 +361,9 @@ function normalizeLbaFlight(flight, type, selectedDate) {
     revisedTime,
     runwayTime: actualTime,
     actualTime,
+    departureTime: type === "departures" ? displayClockTime : "",
+    arrivalTime: type === "arrivals" ? displayClockTime : "",
+    flightDuration: "",
     hasExpectedUpdate: isDifferentMinute(scheduledTime, revisedTime),
     isCancelled,
     isDelayed,

@@ -997,22 +997,25 @@ function createFlightRow(flight) {
   const actualDateTime = getActualDateTime(flight);
   const actualTime = formatTime(actualDateTime);
   const revisedTime = formatTime(flight.revisedTime);
+  const scheduledTime = formatTime(flight.scheduledTime) || flight.time;
   const statusBadge = getStatusBadge(flight);
   const arrivalDelaySummary = getArrivalDelaySummary(flight);
   const currentArrivalTime = getCurrentArrivalTime(flight);
+  const estimatedTime = revisedTime || currentArrivalTime;
+  const estimatedStatusText = estimatedTime ? `Estimated ${estimatedTime}` : "";
   const expectedStatusText = flight.liveStatusText && /^now due/i.test(flight.liveStatusText)
     ? flight.liveStatusText
     : revisedTime
       ? `Due ${revisedTime}`
       : "";
   const timeCell = arrivalDelaySummary
-    ? `<span class="time-wrap"><span class="time-main">${currentArrivalTime || flight.time}</span><span class="time-meta is-delayed" data-mobile="+${formatDurationMinutes(getDelayMinutes(flight))}">${arrivalDelaySummary}</span></span>`
+    ? `<span class="time-wrap"><span class="time-main">${scheduledTime}</span><span class="time-meta is-delayed" data-mobile="${estimatedStatusText}">${estimatedStatusText}</span></span>`
     : actualTime
     ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${actualTime}">${flight.type === "arrivals" ? "Arrived" : "Departed"} ${actualTime}</span></span>`
     : isCancelledFlight(flight)
       ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-cancelled" data-mobile="CXL">Cancelled</span></span>`
       : isDelayedFlight(flight) && revisedTime
-        ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta is-delayed" data-mobile="${revisedTime}">Delayed ${revisedTime}</span></span>`
+        ? `<span class="time-wrap"><span class="time-main">${scheduledTime}</span><span class="time-meta is-delayed" data-mobile="Estimated ${revisedTime}">Estimated ${revisedTime}</span></span>`
       : hasExpectedUpdate(flight) && expectedStatusText
         ? `<span class="time-wrap"><span class="time-main">${flight.time}</span><span class="time-meta" data-mobile="${revisedTime || expectedStatusText}">${expectedStatusText}</span></span>`
     : `<span class="time-main">${flight.time}</span>`;

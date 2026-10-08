@@ -7,18 +7,17 @@
     "longitude": -1.66057,
     "timeZone": "Europe/London"
   },
-  "generatedAt": "2026-10-07T13:02:41.771Z",
+  "generatedAt": "2026-10-08T13:20:30.679Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
   },
   "range": {
-    "firstDate": "2026-10-07",
-    "lastDate": "2026-11-21",
+    "firstDate": "2026-10-08",
+    "lastDate": "2026-11-22",
     "totalDays": 46
   },
   "dates": [
-    "2026-10-07",
     "2026-10-08",
     "2026-10-09",
     "2026-10-10",
@@ -63,7 +62,8 @@
     "2026-11-18",
     "2026-11-19",
     "2026-11-20",
-    "2026-11-21"
+    "2026-11-21",
+    "2026-11-22"
   ],
   "airports": {
     "ACE": {

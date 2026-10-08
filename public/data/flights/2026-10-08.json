@@ -1,6 +1,6 @@
 {
   "date": "2026-10-08",
-  "generatedAt": "2026-10-07T13:02:41.771Z",
+  "generatedAt": "2026-10-08T13:20:30.679Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
@@ -953,10 +953,6 @@
       "route": "Amsterdam (AMS)",
       "isJet2": false,
       "sourceUrl": "https://www.flight.info/LBA/departures/2026-10-08/00:00",
-      "departureTime": "10:05",
-      "arrivalTime": "12:15",
-      "flightDuration": "1:10",
-      "scheduledTime": "2026-10-08T10:05:00",
       "airportFullName": "Amsterdam Airport Schiphol",
       "airportCountryCode": "NL",
       "airportCountryName": "Netherlands",

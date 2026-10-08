@@ -209,7 +209,7 @@ function enrichFlight(flight, airportsByIataCode) {
 }
 
 function parseFlights(html, type, date, sourceUrl) {
-  const blockRegex = /<div class="departures">\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<a[^>]*>(.*?)<\/a>/gms;
+  const blockRegex = /<div class="departures"[^>]*>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<a[^>]*>(.*?)<\/a>/gms;
   const flights = [];
 
   for (const match of html.matchAll(blockRegex)) {

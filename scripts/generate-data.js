@@ -16,6 +16,8 @@ const AIRPORTS_OUTPUT_PATH = path.join(__dirname, "..", "public", "data", "airpo
 const OURAIRPORTS_BASE = "https://davidmegginson.github.io/ourairports-data";
 const MAX_DAYS_AHEAD = 46;
 const EMPTY_DAY_STOP_THRESHOLD = 3;
+const SOURCE_FETCH_ATTEMPTS = 3;
+const SOURCE_RETRY_DELAY_MS = 1500;
 const SOURCE_HEADERS = {
   "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",
   accept: "text/html,application/xhtml+xml"
@@ -374,7 +376,18 @@ async function enrichScheduleDetails(flights, date) {
 
 async function fetchHtml(url) {
   const headerArgs = Object.entries(SOURCE_HEADERS).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
-  const { stdout } = await execFileAsync("curl", ["-L", "--silent", "--show-error", ...headerArgs, url], {
+  const { stdout } = await execFileAsync("curl", [
+    "-L",
+    "--silent",
+    "--show-error",
+    "--retry",
+    "2",
+    "--retry-delay",
+    "1",
+    "--retry-all-errors",
+    ...headerArgs,
+    url
+  ], {
     maxBuffer: 1024 * 1024 * 32,
     timeout: 120000
   });
@@ -382,11 +395,37 @@ async function fetchHtml(url) {
   return stdout;
 }
 
+function isFlightSchedulePage(html) {
+  return /id=["']datepicker["']/.test(html) && /class=["']departures["']/.test(html);
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 async function fetchFlightsForDate(type, date) {
   const sourceUrl = getSourceUrl(type, date);
-  const html = await fetchHtml(sourceUrl);
-  const flights = parseFlights(html, type, date, sourceUrl);
-  return enrichScheduleDetails(flights, date);
+
+  for (let attempt = 1; attempt <= SOURCE_FETCH_ATTEMPTS; attempt += 1) {
+    const html = await fetchHtml(sourceUrl);
+
+    if (!isFlightSchedulePage(html)) {
+      if (attempt === SOURCE_FETCH_ATTEMPTS) {
+        throw new Error(`Unexpected response while fetching ${sourceUrl}`);
+      }
+      await wait(SOURCE_RETRY_DELAY_MS * attempt);
+      continue;
+    }
+
+    const flights = parseFlights(html, type, date, sourceUrl);
+    if (flights.length || attempt === SOURCE_FETCH_ATTEMPTS) {
+      return enrichScheduleDetails(flights, date);
+    }
+
+    await wait(SOURCE_RETRY_DELAY_MS * attempt);
+  }
+
+  return [];
 }
 
 async function fetchOurAirportsDataset(fileName) {

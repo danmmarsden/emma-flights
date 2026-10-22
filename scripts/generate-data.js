@@ -211,7 +211,7 @@ function enrichFlight(flight, airportsByIataCode) {
 }
 
 function parseFlights(html, type, date, sourceUrl) {
-  const blockRegex = /<div class="departures"[^>]*>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>(.*?)<\/div>\s*<div class="deparr-row"[^>]*>.*?<a[^>]*>(.*?)<\/a>/gms;
+  const blockRegex = /<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>.*?<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>.*?<a[^>]*>(.*?)<\/a>/gms;
   const flights = [];
 
   for (const match of html.matchAll(blockRegex)) {
@@ -396,7 +396,7 @@ async function fetchHtml(url) {
 }
 
 function isFlightSchedulePage(html) {
-  return /id=["']datepicker["']/.test(html) && /class=["']departures["']/.test(html);
+  return /id\s*=\s*["']datepicker["']/.test(html) && /class\s*=\s*["'][^"']*\bdepartures\b[^"']*["']/.test(html);
 }
 
 function wait(milliseconds) {

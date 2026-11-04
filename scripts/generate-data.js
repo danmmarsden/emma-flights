@@ -379,6 +379,7 @@ async function fetchHtml(url) {
   const headerArgs = Object.entries(SOURCE_HEADERS).flatMap(([key, value]) => ["-H", `${key}: ${value}`]);
   const { stdout } = await execFileAsync("curl", [
     "-L",
+    "--ipv4",
     "--silent",
     "--show-error",
     "--retry",

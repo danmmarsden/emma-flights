@@ -21,7 +21,15 @@ jobs:
           node-version: 24
 
       - name: Generate latest flight data
-        run: node scripts/generate-data.js
+        run: |
+          for attempt in 1 2 3; do
+            if node scripts/generate-data.js; then
+              exit 0
+            fi
+            echo "Flight data generation attempt ${attempt} failed; retrying..."
+            sleep 15
+          done
+          exit 1
 
       - name: Commit updated data
         run: |

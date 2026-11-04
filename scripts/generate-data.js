@@ -19,8 +19,9 @@ const EMPTY_DAY_STOP_THRESHOLD = 3;
 const SOURCE_FETCH_ATTEMPTS = 3;
 const SOURCE_RETRY_DELAY_MS = 1500;
 const SOURCE_HEADERS = {
-  "user-agent": "Mozilla/5.0 (compatible; LBA-arrivals-departures/1.0)",
-  accept: "text/html,application/xhtml+xml"
+  "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "accept-language": "en-GB,en;q=0.9"
 };
 const flightScheduleLoadsByNumber = new Map();
 

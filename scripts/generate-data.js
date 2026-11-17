@@ -212,7 +212,8 @@ function enrichFlight(flight, airportsByIataCode) {
 }
 
 function parseFlights(html, type, date, sourceUrl) {
-  const blockRegex = /<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>.*?<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>(.*?)<\/div>\s*<div\s+class=["']deparr-row["'][^>]*>.*?<a[^>]*>(.*?)<\/a>/gms;
+  const row = `class=["'][^"']*\\bdeparr-row\\b[^"']*["']`;
+  const blockRegex = new RegExp(`<div\\s+${row}[^>]*>(.*?)<\\/div>\\s*<div\\s+${row}[^>]*>.*?<\\/div>\\s*<div\\s+${row}[^>]*>(.*?)<\\/div>\\s*<div\\s+${row}[^>]*>(.*?)<\\/div>\\s*<div\\s+${row}[^>]*>.*?<a[^>]*>(.*?)<\\/a>`, "gms");
   const flights = [];
 
   for (const match of html.matchAll(blockRegex)) {

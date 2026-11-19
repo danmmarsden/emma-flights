@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T10:25:57.320Z",
+  "generatedAt": "2026-11-17T15:11:23.495Z",
   "source": {
     "name": "OurAirports",
     "baseUrl": "https://ourairports.com/data/"
@@ -309,25 +309,6 @@
       "wikipediaLink": "https://en.wikipedia.org/wiki/Copenhagen_Airport",
       "distanceMiles": 583
     },
-    "DLM": {
-      "ident": "LTBS",
-      "type": "large_airport",
-      "name": "Dalaman International Airport",
-      "latitude": 36.7131,
-      "longitude": 28.7925,
-      "elevationFt": 20,
-      "continent": "AS",
-      "countryCode": "TR",
-      "countryName": "Turkey",
-      "regionCode": "TR-48",
-      "municipality": "Dalaman",
-      "scheduledService": true,
-      "icaoCode": "LTBS",
-      "iataCode": "DLM",
-      "homeLink": "https://www.dalamanairport.aero/",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Dalaman_Airport",
-      "distanceMiles": 1872
-    },
     "DUB": {
       "ident": "EIDW",
       "type": "large_airport",
@@ -461,44 +442,6 @@
       "wikipediaLink": "https://en.wikipedia.org/wiki/Geneva_Airport",
       "distanceMiles": 629
     },
-    "HER": {
-      "ident": "LGIR",
-      "type": "large_airport",
-      "name": "Heraklion International Nikos Kazantzakis Airport",
-      "latitude": 35.339699,
-      "longitude": 25.1803,
-      "elevationFt": 115,
-      "continent": "EU",
-      "countryCode": "GR",
-      "countryName": "Greece",
-      "regionCode": "GR-M",
-      "municipality": "Heraklion",
-      "scheduledService": true,
-      "icaoCode": "LGIR",
-      "iataCode": "HER",
-      "homeLink": "https://www.heraklion-airport.gr/en/",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Heraklion_International_Airport_\"Nikos_Kazantzakis\"",
-      "distanceMiles": 1818
-    },
-    "KEF": {
-      "ident": "BIKF",
-      "type": "large_airport",
-      "name": "Keflavik International Airport",
-      "latitude": 63.985001,
-      "longitude": -22.6056,
-      "elevationFt": 171,
-      "continent": "EU",
-      "countryCode": "IS",
-      "countryName": "Iceland",
-      "regionCode": "IS-2",
-      "municipality": "Reykjavík",
-      "scheduledService": true,
-      "icaoCode": "BIKF",
-      "iataCode": "KEF",
-      "homeLink": "https://www.isavia.is/en/keflavik-airport",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Keflav%C3%ADk_International_Airport",
-      "distanceMiles": 1014
-    },
     "KRK": {
       "ident": "EPKK",
       "type": "large_airport",
@@ -536,25 +479,6 @@
       "homeLink": "http://www.lbia.co.uk/",
       "wikipediaLink": "https://en.wikipedia.org/wiki/Leeds_Bradford_International_Airport",
       "distanceMiles": 0
-    },
-    "LCA": {
-      "ident": "LCLK",
-      "type": "large_airport",
-      "name": "Larnaca International Airport",
-      "latitude": 34.875099,
-      "longitude": 33.624901,
-      "elevationFt": 8,
-      "continent": "AS",
-      "countryCode": "CY",
-      "countryName": "Cyprus",
-      "regionCode": "CY-04",
-      "municipality": "Larnaca",
-      "scheduledService": true,
-      "icaoCode": "LCLK",
-      "iataCode": "LCA",
-      "homeLink": "http://www.cyprusairports.com.cy/showpage.php?PageID=2",
-      "wikipediaLink": "https://en.wikipedia.org/wiki/Larnaca_International_Airport",
-      "distanceMiles": 2146
     },
     "LPA": {
       "ident": "GCLP",

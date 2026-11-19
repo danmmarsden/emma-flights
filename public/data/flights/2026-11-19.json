@@ -1,35 +1,11 @@
 {
   "date": "2026-11-19",
-  "generatedAt": "2026-11-04T10:25:57.320Z",
+  "generatedAt": "2026-11-17T15:11:23.495Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
   },
   "flights": [
-    {
-      "type": "departures",
-      "date": "2026-11-19",
-      "time": "06:00",
-      "airline": "Ryanair",
-      "flightNumber": "FR240",
-      "airportName": "Tenerife",
-      "airportCode": "TFS",
-      "route": "Tenerife (TFS)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/departures/2026-11-19/00:00",
-      "departureTime": "06:00",
-      "arrivalTime": "10:35",
-      "flightDuration": "4:35",
-      "scheduledTime": "2026-11-19T06:00:00",
-      "airportFullName": "Tenerife Sur Airport",
-      "airportCountryCode": "ES",
-      "airportCountryName": "Spain",
-      "airportMunicipality": "Tenerife",
-      "airportIcaoCode": "GCTS",
-      "airportLatitude": 28.0445,
-      "airportLongitude": -16.5725,
-      "routeDistanceMiles": 1937
-    },
     {
       "type": "departures",
       "date": "2026-11-19",
@@ -53,6 +29,30 @@
       "airportLatitude": 52.308601,
       "airportLongitude": 4.76389,
       "routeDistanceMiles": 287
+    },
+    {
+      "type": "departures",
+      "date": "2026-11-19",
+      "time": "06:00",
+      "airline": "Ryanair",
+      "flightNumber": "FR240",
+      "airportName": "Tenerife",
+      "airportCode": "TFS",
+      "route": "Tenerife (TFS)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/departures/2026-11-19/00:00",
+      "departureTime": "06:00",
+      "arrivalTime": "10:35",
+      "flightDuration": "4:35",
+      "scheduledTime": "2026-11-19T06:00:00",
+      "airportFullName": "Tenerife Sur Airport",
+      "airportCountryCode": "ES",
+      "airportCountryName": "Spain",
+      "airportMunicipality": "Tenerife",
+      "airportIcaoCode": "GCTS",
+      "airportLatitude": 28.0445,
+      "airportLongitude": -16.5725,
+      "routeDistanceMiles": 1937
     },
     {
       "type": "departures",

@@ -1,11 +1,35 @@
 {
   "date": "2026-11-21",
-  "generatedAt": "2026-11-04T10:25:57.320Z",
+  "generatedAt": "2026-11-17T15:11:23.495Z",
   "source": {
     "name": "flight.info",
     "baseUrl": "https://www.flight.info"
   },
   "flights": [
+    {
+      "type": "departures",
+      "date": "2026-11-21",
+      "time": "06:00",
+      "airline": "KLM",
+      "flightNumber": "KL1018",
+      "airportName": "Amsterdam",
+      "airportCode": "AMS",
+      "route": "Amsterdam (AMS)",
+      "isJet2": false,
+      "sourceUrl": "https://www.flight.info/LBA/departures/2026-11-21/00:00",
+      "departureTime": "06:00",
+      "arrivalTime": "08:15",
+      "flightDuration": "1:15",
+      "scheduledTime": "2026-11-21T06:00:00",
+      "airportFullName": "Amsterdam Airport Schiphol",
+      "airportCountryCode": "NL",
+      "airportCountryName": "Netherlands",
+      "airportMunicipality": "Amsterdam",
+      "airportIcaoCode": "EHAM",
+      "airportLatitude": 52.308601,
+      "airportLongitude": 4.76389,
+      "routeDistanceMiles": 287
+    },
     {
       "type": "departures",
       "date": "2026-11-21",
@@ -77,30 +101,6 @@
       "airportLatitude": 28.0445,
       "airportLongitude": -16.5725,
       "routeDistanceMiles": 1937
-    },
-    {
-      "type": "departures",
-      "date": "2026-11-21",
-      "time": "06:00",
-      "airline": "KLM",
-      "flightNumber": "KL1018",
-      "airportName": "Amsterdam",
-      "airportCode": "AMS",
-      "route": "Amsterdam (AMS)",
-      "isJet2": false,
-      "sourceUrl": "https://www.flight.info/LBA/departures/2026-11-21/00:00",
-      "departureTime": "06:00",
-      "arrivalTime": "08:15",
-      "flightDuration": "1:15",
-      "scheduledTime": "2026-11-21T06:00:00",
-      "airportFullName": "Amsterdam Airport Schiphol",
-      "airportCountryCode": "NL",
-      "airportCountryName": "Netherlands",
-      "airportMunicipality": "Amsterdam",
-      "airportIcaoCode": "EHAM",
-      "airportLatitude": 52.308601,
-      "airportLongitude": 4.76389,
-      "routeDistanceMiles": 287
     },
     {
       "type": "departures",

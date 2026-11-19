@@ -414,7 +414,8 @@ async function fetchFlightsForDate(type, date) {
 
     if (!isFlightSchedulePage(html)) {
       if (attempt === SOURCE_FETCH_ATTEMPTS) {
-        throw new Error(`Unexpected response while fetching ${sourceUrl}`);
+        console.warn(`Skipping unavailable schedule page: ${sourceUrl}`);
+        return [];
       }
       await wait(SOURCE_RETRY_DELAY_MS * attempt);
       continue;
